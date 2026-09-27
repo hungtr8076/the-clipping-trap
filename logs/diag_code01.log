@@ -1,0 +1,316 @@
+Namespace(input='<repo>/data/screen/code01.png', output='/tmp/cc_diag/code01.cool', nobitstream=False, workdir='/tmp/cc_diag/wd/', lmbda=0.0002, print_detailed_archi=False, print_detailed_struct=False, intra_pos='0', p_pos='', n_frames=1, frame_offset=0, coding_idx=0, dec_cfg_residue='cfg/dec/intra/mop.cfg', dec_cfg_motion=None, start_lr=0.01, n_itr=6000, n_itr_pretrain_motion=1000, tune='mse', debug=False, layers_synthesis_residue='16-1-linear-relu,3-1-linear-none,3-3-residual-relu,3-3-residual-none/stabiliser', layers_synthesis_motion='16-1-linear-relu,X-1-linear-none/stabiliser', arm_residue='10,2/stabiliser', arm_motion='6,2/stabiliser', output_feature_ifce_residue=4, output_feature_ifce_motion=6, ifce_resolution_residue='0-2', ifce_resolution_motion='2-2', hyperlatent_resolution_residue='auto', hyperlatent_resolution_motion='no', latent_resolution_residue='auto', latent_resolution_motion='2-6', ups_k_size_residue=8, ups_k_size_motion=8, ups_preconcat_k_size_residue=7, ups_preconcat_k_size_motion=7, warp_filter_size=8)
+----------
+Command Line Args:   -i <repo>/data/screen/code01.png -o /tmp/cc_diag/code01.cool --lmbda 0.0002 --n_itr 6000 --dec_cfg_residue cfg/dec/intra/mop.cfg --workdir /tmp/cc_diag/wd/
+Config File (cfg/dec/intra/mop.cfg):
+  latent_resolution_residue:auto
+  hyperlatent_resolution_residue:auto
+  arm_residue:       10,2/stabiliser
+  output_feature_ifce_residue:4
+  ifce_resolution_residue:0-2
+  layers_synthesis_residue:16-1-linear-relu,3-1-linear-none,3-3-residual-relu,3-3-residual-none/stabiliser
+  ups_k_size_residue:8
+  ups_preconcat_k_size_residue:7
+Defaults:
+  --intra_pos:       0
+  --p_pos:           
+  --n_frames:        1
+  --frame_offset:    0
+  --coding_idx:      0
+  --start_lr:        0.01
+  --n_itr_pretrain_motion:1000
+  --tune:            mse
+  --layers_synthesis_motion:16-1-linear-relu,X-1-linear-none/stabiliser
+  --arm_motion:      6,2/stabiliser
+  --output_feature_ifce_motion:6
+  --ifce_resolution_motion:2-2
+  --hyperlatent_resolution_motion:no
+  --latent_resolution_motion:2-6
+  --ups_k_size_motion:8
+  --ups_preconcat_k_size_motion:7
+  --warp_filter_size:8
+
+
+
+*----------------------------------------------------------------------------------------------------------*
+|                                                                                                          |
+|                                                                                                          |
+|       ,gggg,                                                                                             |
+|     ,88"""Y8b,                           ,dPYb,                             ,dPYb,                       |
+|    d8"     `Y8                           IP'`Yb                             IP'`Yb                       |
+|   d8'   8b  d8                           I8  8I                             I8  8I      gg               |
+|  ,8I    "Y88P'                           I8  8'                             I8  8'      ""               |
+|  I8'             ,ggggg,      ,ggggg,    I8 dP      aaaaaaaa        ,gggg,  I8 dPgg,    gg     ,gggg,    |
+|  d8             dP"  "Y8ggg  dP"  "Y8ggg I8dP       """"""""       dP"  "Yb I8dP" "8I   88    dP"  "Yb   |
+|  Y8,           i8'    ,8I   i8'    ,8I   I8P                      i8'       I8P    I8   88   i8'         |
+|  `Yba,,_____, ,d8,   ,d8'  ,d8,   ,d8'  ,d8b,_                   ,d8,_    _,d8     I8,_,88,_,d8,_    _   |
+|    `"Y8888888 P"Y8888P"    P"Y8888P"    8P'"Y88                  P""Y8888PP88P     `Y88P""Y8P""Y8888PP   |
+|                                                                                                          |
+|                                                                                                          |
+| version 5.0.1, June 2026                                                              © 2023-2026 Orange |
+*----------------------------------------------------------------------------------------------------------*
+
+wu_n_stage:2 wu_n_cand:5 wu_n_iter:100 core_training=4800 (80% overall)
+Device                    : cpu
+
+Coding configuration:
+---------------------
+n_frames                  : 1
+frame_offset              : 0
+seq_name                  : code01
+intra_pos                 : 0
+p_pos                     : 
+
+
+
+Frame being encoded
+-------------------
+
++----------------+----------------+----------------+----------------+----------------+----------------+
+|   Frame type   |  Coding order  | Display order  |  Ref 1 (disp)  |  Ref 2 (disp)  |     Depth      |
++----------------+----------------+----------------+----------------+----------------+----------------+
+|       I        |       0        |       0        |       /        |       /        |       0        |
++----------------+----------------+----------------+----------------+----------------+----------------+
+
+
+Preset: intra     
+-------
+
+Warm-up
+-------
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+|  Candidates  |  Learn rate  | Max itr | Patience itr | Schedule lr |     Quant / Temp     |    Quant / Noise     |        Distortion         |
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+|      5       |   1.0e-02    |   100   |     100      |     No      | soft / 0.35 -> 0.35  |  gaus 0.23 -> 0.23   |        mse: 1.0000        |
+|      2       |   1.0e-02    |   100   |     100      |     No      | soft / 0.35 -> 0.35  |  gaus 0.23 -> 0.23   |        mse: 1.0000        |
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+
+Main training
+-------------
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+| Phase index  |  Learn rate  | Max itr | Patience itr | Schedule lr |     Quant / Temp     |    Quant / Noise     |        Distortion         |
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+|      0       |   1.0e-02    |  4800   |     5000     |     Yes     | soft / 0.35 -> 0.08  |  gaus 0.22 -> 0.15   |        mse: 1.0000        |
+|      1       |   1.0e-04    |   500   |    10000     |     Yes     |         hard         |         none         |        mse: 1.0000        |
++--------------+--------------+---------+--------------+-------------+----------------------+----------------------+---------------------------+
+
+Maximum number of iterations (motion / warm-up / training / total):   0     /   700    /   5300   /   6000  
+
+Decoder architectures
+---------------------
+
+residue decoder parameters
+--------------------------
+layers_synthesis                   : ['16-1-linear-relu', '3-1-linear-none', '3-3-residual-relu', '3-3-residual-none']
+linear_stabiliser_synth            : True                                                                            
+input_feature_synthesis            : 7                                                                               
+ups_k_size                         : 8                                                                               
+ups_preconcat_k_size               : 7                                                                               
+ifce_resolution                    : (0, 2)                                                                          
+output_feature_ifce                : 4                                                                               
+spatial_context_arm                : 10                                                                              
+linear_stabiliser_arm              : True                                                                            
+n_hidden_layers_arm                : 2                                                                               
+total_context_arm                  : 14                                                                              
+latent_resolution                  : (0, 6)                                                                          
+hyperlatent_resolution             : (4, 6)                                                                          
+flag_common_randomness             : False                                                                           
+img_size                           : (512, 768)                                                                      
+final_upsampling_type              : bicubic                                                                         
+encoder_gain                       : 20                                                                              
+flag_ifce                          : True                                                                            
+flag_hyperlatent                   : True                                                                            
+cr_latent_resolution               : None                                                                            
+size_per_latent                    : [(512, 768), (256, 384), (128, 192), (64, 96), (32, 48), (32, 48), (16, 24), (16, 24), (8, 12), (8, 12)]
+size_per_latent_cr                 : []                                                                              
+flag_is_hyperlatent                : [False, False, False, False, False, True, False, True, False, True]             
+input_features_ifce                : [9, 8, 7, 0, 0, 0, 0, 0, 0, 0]                                                  
+n_latent_grids                     : 10                                                                              
+
+
+
+
+
+residue decoder:     1036 MAC / pixel
+-------------------------------------
+   - ARM              600 MAC / pixel; 57.8 % of the complexity
+   - Upsampling        66 MAC / pixel;  6.3 % of the complexity
+   - Synthesis        352 MAC / pixel; 34.0 % of the complexity
+   - Inter ft ARM      11 MAC / pixel;  1.1 % of the complexity
+
+
+
+
+------------------------------  Warm-up phase:  0 ------------------------------
+
+Candidate n° 0 , ID = 0 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.386176   0.000000   0.065998   20.281225  20.281225  0.065998   31.6       100        0.0100     1          softround  0.350      gaussian   0.23       +0.066 bpp +20.081 db 
+
+Candidate n° 1 , ID = 1 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.378900   0.000000   0.029618   20.281225  20.281225  0.029618   63.6       200        0.0100     1          softround  0.350      gaussian   0.23       +0.030 bpp +20.081 db 
+
+Candidate n° 2 , ID = 2 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.384651   0.000000   0.058372   20.281225  20.281225  0.058372   95.8       300        0.0100     1          softround  0.350      gaussian   0.23       +0.058 bpp +20.081 db 
+
+Candidate n° 3 , ID = 3 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.443100   0.000000   0.350613   20.281225  20.281225  0.350613   128.3      400        0.0100     1          softround  0.350      gaussian   0.23       +0.351 bpp +20.081 db 
+
+Candidate n° 4 , ID = 4 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.377421   0.000000   0.022224   20.281225  20.281225  0.022224   158.2      500        0.0100     1          softround  0.350      gaussian   0.23       +0.022 bpp +20.081 db 
+
+
+Performance at the end of the warm-up phase:
+
+  ID  |     loss     |   rate_bpp   |   psnr_db    |
+------|--------------|--------------|--------------|
+  4   |    9.3774    |    0.0222    |   20.2812    |
+  1   |    9.3789    |    0.0296    |   20.2812    |
+  2   |    9.3847    |    0.0584    |   20.2812    |
+  0   |    9.3862    |    0.0660    |   20.2812    |
+  3   |    9.4431    |    0.3506    |   20.2812    |
+
+------------------------------  Warm-up phase:  1 ------------------------------
+
+Candidate n° 0 , ID = 4 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.380356   0.000000   0.036892   20.281225  20.281225  0.036892   190.0      600        0.0100     0          softround  0.350      gaussian   0.23                  
+
+Candidate n° 1 , ID = 1 :
+-------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.381806   0.000000   0.044151   20.281225  20.281225  0.044151   220.7      700        0.0100     0          softround  0.350      gaussian   0.23                  
+
+
+Performance at the end of the warm-up phase:
+
+  ID  |     loss     |   rate_bpp   |   psnr_db    |
+------|--------------|--------------|--------------|
+  4   |    9.3774    |    0.0222    |   20.2812    |
+  1   |    9.3789    |    0.0296    |   20.2812    |
+
+Intra Warm-up is done!
+Intra Warm-up time [s]: 221.96
+Intra Winner ID       : 4
+
+No compilation when no cuda is available
+------------------------------ Training phase:  0 ------------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.376320   0.000000   0.016716   20.281225  20.281225  0.016716   252.1      800        0.0100     50         softround  0.350      gaussian   0.22       -0.006 bpp +0.000 db 
+9.378526   0.000000   0.027746   20.281225  20.281225  0.027746   283.5      900        0.0100     49         softround  0.344      gaussian   0.22                  
+9.379793   0.000000   0.034081   20.281225  20.281225  0.034081   315.0      1000       0.0100     48         softround  0.339      gaussian   0.22                  
+9.380624   0.000000   0.038237   20.281225  20.281225  0.038237   345.7      1100       0.0099     47         softround  0.333      gaussian   0.22                  
+9.381185   0.000000   0.041037   20.281225  20.281225  0.041037   376.9      1200       0.0098     46         softround  0.328      gaussian   0.21                  
+9.381518   0.000000   0.042710   20.281225  20.281225  0.042710   408.3      1300       0.0097     45         softround  0.322      gaussian   0.21                  
+9.381816   0.000000   0.044195   20.281225  20.281225  0.044195   439.5      1400       0.0096     44         softround  0.316      gaussian   0.21                  
+9.381989   0.000000   0.045061   20.281225  20.281225  0.045061   470.9      1500       0.0095     43         softround  0.311      gaussian   0.21                  
+9.381830   0.000000   0.044266   20.281225  20.281225  0.044266   502.1      1600       0.0093     42         softround  0.305      gaussian   0.21                  
+9.381800   0.000000   0.044118   20.281225  20.281225  0.044118   532.9      1700       0.0092     41         softround  0.299      gaussian   0.21                  
+9.381830   0.000000   0.044267   20.281225  20.281225  0.044267   564.3      1800       0.0090     40         softround  0.294      gaussian   0.21                  
+9.381230   0.000000   0.041266   20.281225  20.281225  0.041266   595.9      1900       0.0088     39         softround  0.288      gaussian   0.20                  
+9.381828   0.000000   0.044259   20.281225  20.281225  0.044259   627.5      2000       0.0085     38         softround  0.283      gaussian   0.20                  
+9.381020   0.000000   0.040215   20.281225  20.281225  0.040215   659.5      2100       0.0083     37         softround  0.277      gaussian   0.20                  
+9.381190   0.000000   0.041068   20.281225  20.281225  0.041068   692.0      2200       0.0080     36         softround  0.271      gaussian   0.20                  
+9.380635   0.000000   0.038292   20.281225  20.281225  0.038292   724.2      2300       0.0078     35         softround  0.266      gaussian   0.20                  
+9.380292   0.000000   0.036579   20.281225  20.281225  0.036579   757.1      2400       0.0075     34         softround  0.260      gaussian   0.20                  
+9.379766   0.000000   0.033947   20.281225  20.281225  0.033947   789.8      2500       0.0072     33         softround  0.254      gaussian   0.20                  
+9.379434   0.000000   0.032283   20.281225  20.281225  0.032283   822.6      2600       0.0069     32         softround  0.249      gaussian   0.19                  
+9.378822   0.000000   0.029232   20.281225  20.281225  0.029232   856.5      2700       0.0066     31         softround  0.243      gaussian   0.19                  
+9.378448   0.000000   0.027353   20.281225  20.281225  0.027353   887.1      2800       0.0063     30         softround  0.238      gaussian   0.19                  
+9.378093   0.000000   0.025578   20.281225  20.281225  0.025578   918.2      2900       0.0060     29         softround  0.232      gaussian   0.19                  
+9.377615   0.000000   0.023192   20.281225  20.281225  0.023192   947.9      3000       0.0057     28         softround  0.226      gaussian   0.19                  
+9.376735   0.000000   0.018790   20.281225  20.281225  0.018790   979.4      3100       0.0053     27         softround  0.221      gaussian   0.19                  
+9.375971   0.000000   0.014973   20.281225  20.281225  0.014973   1010.9     3200       0.0050     50         softround  0.215      gaussian   0.19       -0.007 bpp +0.000 db 
+9.375466   0.000000   0.012447   20.281225  20.281225  0.012447   1042.2     3300       0.0047     50         softround  0.209      gaussian   0.18       -0.010 bpp +0.000 db 
+9.375260   0.000000   0.011419   20.281225  20.281225  0.011419   1073.6     3400       0.0044     50         softround  0.204      gaussian   0.18       -0.011 bpp +0.000 db 
+9.374646   0.000000   0.008350   20.281225  20.281225  0.008350   1104.5     3500       0.0040     50         softround  0.198      gaussian   0.18       -0.014 bpp +0.000 db 
+9.374124   0.000000   0.005738   20.281225  20.281225  0.005738   1135.5     3600       0.0037     50         softround  0.193      gaussian   0.18       -0.016 bpp +0.000 db 
+9.373866   0.000000   0.004448   20.281225  20.281225  0.004448   1166.8     3700       0.0034     50         softround  0.187      gaussian   0.18       -0.018 bpp +0.000 db 
+9.373596   0.000000   0.003096   20.281225  20.281225  0.003096   1197.9     3800       0.0031     50         softround  0.181      gaussian   0.18       -0.019 bpp +0.000 db 
+9.373449   0.000000   0.002364   20.281225  20.281225  0.002364   1228.8     3900       0.0028     50         softround  0.176      gaussian   0.17       -0.020 bpp +0.000 db 
+9.373375   0.000000   0.001992   20.281225  20.281225  0.001992   1260.3     4000       0.0025     50         softround  0.170      gaussian   0.17       -0.020 bpp +0.000 db 
+9.373353   0.000000   0.001879   20.281225  20.281225  0.001879   1291.7     4100       0.0022     50         softround  0.164      gaussian   0.17       -0.020 bpp +0.000 db 
+9.373303   0.000000   0.001632   20.281225  20.281225  0.001632   1322.3     4200       0.0020     50         softround  0.159      gaussian   0.17       -0.021 bpp +0.000 db 
+9.373321   0.000000   0.001719   20.281225  20.281225  0.001719   1352.8     4300       0.0017     49         softround  0.153      gaussian   0.17                  
+9.373279   0.000000   0.001509   20.281225  20.281225  0.001509   1383.5     4400       0.0015     50         softround  0.148      gaussian   0.17       -0.021 bpp +0.000 db 
+9.373258   0.000000   0.001408   20.281225  20.281225  0.001408   1414.2     4500       0.0012     50         softround  0.142      gaussian   0.17       -0.021 bpp +0.000 db 
+9.373254   0.000000   0.001388   20.281225  20.281225  0.001388   1444.9     4600       0.0010     50         softround  0.136      gaussian   0.16       -0.021 bpp +0.000 db 
+9.373258   0.000000   0.001407   20.281225  20.281225  0.001407   1475.5     4700       0.0009     49         softround  0.131      gaussian   0.16                  
+9.373227   0.000000   0.001255   20.281225  20.281225  0.001255   1506.5     4800       0.0007     50         softround  0.125      gaussian   0.16       -0.021 bpp +0.000 db 
+9.373233   0.000000   0.001279   20.281225  20.281225  0.001279   1537.6     4900       0.0005     49         softround  0.119      gaussian   0.16                  
+9.373210   0.000000   0.001168   20.281225  20.281225  0.001168   1569.0     5000       0.0004     50         softround  0.114      gaussian   0.16       -0.021 bpp +0.000 db 
+9.373210   0.000000   0.001167   20.281225  20.281225  0.001167   1600.9     5100       0.0003     49         softround  0.108      gaussian   0.16                  
+9.373187   0.000000   0.001051   20.281225  20.281225  0.001051   1630.9     5200       0.0002     50         softround  0.103      gaussian   0.16       -0.021 bpp +0.000 db 
+9.373182   0.000000   0.001028   20.281225  20.281225  0.001028   1660.2     5300       0.0001     50         softround  0.097      gaussian   0.15       -0.021 bpp +0.000 db 
+9.373176   0.000000   0.000997   20.281225  20.281225  0.000997   1691.7     5400       0.0001     50         softround  0.091      gaussian   0.15       -0.021 bpp +0.000 db 
+9.373168   0.000000   0.000956   20.281225  20.281225  0.000956   1722.8     5500       0.0000     50         softround  0.086      gaussian   0.15       -0.021 bpp +0.000 db 
+
+Results at the end of the phase:
+--------------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        
+9.373168   0.000000   0.000956   20.281225  20.281225  0.000956   1722.8     5500       
+
+------------------------------ Training phase:  1 ------------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        lr         patience   q_type     sr_temp    n_type     noise      record     
+9.373079   0.000000   0.000511   20.281225  20.281225  0.000511   1752.4     5600       0.0001     100        hardround  0.300      none       1.00       -0.000 bpp +0.000 db 
+9.373055   0.000000   0.000394   20.281225  20.281225  0.000394   1781.9     5700       0.0001     100        hardround  0.300      none       1.00       -0.001 bpp +0.000 db 
+9.373049   0.000000   0.000361   20.281225  20.281225  0.000361   1812.0     5800       0.0001     100        hardround  0.300      none       1.00       -0.001 bpp +0.000 db 
+9.373047   0.000000   0.000351   20.281225  20.281225  0.000351   1842.2     5900       0.0000     100        hardround  0.300      none       1.00       -0.001 bpp +0.000 db 
+9.373047   0.000000   0.000347   20.281225  20.281225  0.000347   1872.1     6000       0.0000     99         hardround  0.300      none       1.00                  
+
+Results at the end of the phase:
+--------------------------------
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        
+9.373047   0.000000   0.000351   20.281225  20.281225  0.000351   1872.1     6000       
+
+
+Time quantize_model(): 46.5 seconds
+
+Start discrete RDOQ on neural network parameters...
+Initial performance:
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        
+9.374300   0.005475   0.001144   20.281225  20.281225  0.006619   1918.6     6000       
+
+loss       nn_bpp     latent_bpp dist_db    psnr_db    rate_bpp   time_sec   itr        cc_name    module     w_or_b     rdoq_time  n_forward  
+9.373952   0.004372   0.000502   20.281225  20.281225  0.004874   1918.6     6000       residue    arm        weight        28.3    1190       
+9.373937   0.004331   0.000469   20.281225  20.281225  0.004799   1918.6     6000       residue    arm        bias          30.9    1294       
+9.373917   0.004237   0.000463   20.281225  20.281225  0.004700   1918.6     6000       residue    ifce       weight        36.9    1504       
+9.373915   0.004229   0.000460   20.281225  20.281225  0.004689   1918.6     6000       residue    ifce       bias          37.7    1529       
+9.373915   0.004229   0.000460   20.281225  20.281225  0.004689   1918.6     6000       residue    synthesis  weight        53.9    2233       
+9.373891   0.004115   0.000460   20.281225  20.281225  0.004574   1918.6     6000       residue    synthesis  bias          55.8    2310       
+9.373874   0.004023   0.000460   20.281225  20.281225  0.004483   1918.6     6000       residue    upsampling weight        65.1    2418       
+9.373874   0.004023   0.000460   20.281225  20.281225  0.004483   1918.6     6000       residue    upsampling bias          67.4    2442       
+
+Time rdoq_model(): 67.4 seconds
+
+End of training 
+
+
+
+Writing bitstream to /tmp/cc_diag/code01.cool
+
+Decoding the bitstream, logging the results into: 0000-results_decoder.tsv
+Decoding frame 0    time =   0.72 seconds.
+
+loss        psnr_db      rate_bpp    lmbda    seq_name   n_pixels   display_order   coding_order   
+9.3744658   20.2812247   0.0074463   0.0002   code01     393216     0               0              

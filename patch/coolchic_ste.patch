@@ -1,0 +1,18 @@
+--- a/coolchic/component/frame.py
++++ b/coolchic/component/frame.py
+@@ -284,7 +284,14 @@
+         if self.frame_data_type == "yuv420":
+             decoded_image = yuv_dict_clamp(convert_444_to_420(decoded_image), 0.0, 1.0)
+         elif self.frame_data_type != "flow":
+-            decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
++            if self.training:
++                # Straight-through clamp (The Clipping Trap): the forward value is clamped as
++                # before, but the gradient passes through unchanged, so saturated pixels keep
++                # contributing to the distortion gradient during the per-image optimization.
++                clamped = torch.clamp(decoded_image, 0.0, 1.0)
++                decoded_image = decoded_image + (clamped - decoded_image).detach()
++            else:
++                decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
+ 
+         # Quantization
+         if not self.training:

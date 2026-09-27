@@ -1,0 +1,6 @@
+{"image": "real12", "dataset": "screen_real", "hf_pct": 21.4, "lmbda": 0.0006, "bpp": 0.07645670572916667, "psnr": 48.07279220143688, "collapsed": false, "seconds": 735.5}
+{"image": "real09", "dataset": "screen_real", "hf_pct": 30.7, "lmbda": 0.0006, "bpp": 0.011739095052083334, "psnr": 16.70592696261753, "collapsed": true, "seconds": 742.0}
+{"image": "real11", "dataset": "screen_real", "hf_pct": 39.7, "lmbda": 0.0006, "bpp": 0.006429036458333333, "psnr": 30.680902123589277, "collapsed": true, "seconds": 748.4}
+{"image": "text04", "dataset": "screen", "hf_pct": 44.2, "lmbda": 0.0006, "bpp": 0.005147298177083333, "psnr": 13.228492947116417, "collapsed": true, "seconds": 752.9}
+{"image": "real05", "dataset": "screen_real", "hf_pct": 46.3, "lmbda": 0.0006, "bpp": 0.6667683919270834, "psnr": 40.368383857342245, "collapsed": false, "seconds": 748.2}
+{"image": "code02", "dataset": "screen", "hf_pct": 49.2, "lmbda": 0.0006, "bpp": 0.18935139973958334, "psnr": 44.9784398779245, "collapsed": false, "seconds": 747.3}
