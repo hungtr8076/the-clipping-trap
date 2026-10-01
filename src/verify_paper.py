@@ -99,6 +99,8 @@ def flatness(pool: list[dict]) -> None:
     flat = [r for r in coll if r["recon_std"] == 0.0]
     fact("collapsed encodes with recon_std", f"{len(coll)}")
     fact("exactly one color (std = 0.00)", f"{len(flat)} of {len(coll)}")
+    check("quoted as 31 of the 50 collapsed encodes", (len(flat), len(coll)) == (31, 50),
+          f"{len(flat)} of {len(coll)}")
     rest = sorted((r for r in coll if r["recon_std"] > 0), key=lambda r: -r["recon_std"])
     fact("largest surviving recon_std", f"{rest[0]['recon_std']:.2f} ({rest[0]['image']})",
          f"source std {rest[0].get('src_std', 0):.2f}, margin {rest[0]['margin']:+.2f} dB")
@@ -124,6 +126,9 @@ def margin_gap(pool: list[dict]) -> None:
     fact("running margin range", f"{run[0]:+.2f} .. {run[-1]:+.2f} dB")
     fact("empty band", f"{run[0] - coll[-1]:.2f} dB", f"{coll[-1]:+.2f} to {run[0]:+.2f}")
     check("no encode lands inside the band", coll[-1] < run[0])
+    check("quoted as 270 encodes, 67 collapsed and 203 working",
+          (len(pool), len(coll), len(run)) == (270, 67, 203),
+          f"{len(pool)} = {len(coll)} + {len(run)}")
     check("threshold sits inside the empty band", coll[-1] < THRESHOLD < run[0],
           f"any cut in ({coll[-1]:.2f}, {run[0]:.2f}) gives the same labels")
 
@@ -139,6 +144,12 @@ def collapse_rates(pool: list[dict]) -> None:
     for k, (n, c) in sorted(by.items(), key=lambda kv: (-kv[1][1] / kv[1][0], kv[0])):
         print(f"    {k:<13}{n:>4}{c:>11}{100 * c / n:>8.1f}%")
     fact("encodes in this table", f"{len(sub)}")
+    check("Table 1: code01 collapses on 6 of 6 encodes", tuple(by["code01"]) == (6, 6),
+          f"{int(by['code01'][1])}/{by['code01'][0]}")
+    fix = [r["bpp"] for r in jsonl("arena.jsonl")
+           if r["image"] == "code01" and r["arm"] == "st" and r["lmbda"] == 0.0006]
+    check("code01 reaches 0.17 bpp only with the fix", len(fix) == 1 and round(fix[0], 2) == 0.17,
+          str(fix))
 
     nat = jsonl("natural_seeds.jsonl")
     def arm(name: str) -> tuple[int, int]:

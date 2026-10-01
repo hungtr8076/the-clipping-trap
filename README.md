@@ -62,7 +62,7 @@ python src/detect_collapse.py examples/text01_source.png examples/text01_fixed.p
 
 The test compares the reconstruction with the constant image of the same source:
 `margin = PSNR(x, x_hat) - PSNR(x, mean(x))`. An encode is collapsed when the margin is below
-5 dB. Over the 194 stock encodes in the paper, collapsed encodes lie between -5.09 and +0.79 dB
+5 dB. Over the 270 stock encodes in the paper, collapsed encodes lie between -5.09 and +0.79 dB
 and working ones between +10.82 and +35.52 dB, so the exact threshold does not matter.
 
 ## Apply the fix to Cool-chic
