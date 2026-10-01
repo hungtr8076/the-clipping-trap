@@ -20,6 +20,8 @@ Selection rules:
   * Cool-chic only. The C3 runs use a different codec, crop size and iteration budget.
   * One rate point only, lambda = 0.0006. Collapse probability depends on lambda, so
     pooling rates would put a second variable on a two-variable plot.
+  * Collapse uses the same rule as verify_paper.py, margin < 5 dB, recomputed for every row
+    rather than read from the stored `collapsed` flag (one probe_ramp row has a stale flag).
 
 Nothing is encoded by color, so the figure survives black-and-white printing: the marker
 SHAPE gives the content type and the marker FILL gives the measured collapse rate.
@@ -39,9 +41,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
+import headline                                  # same directory
+
 ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "results"
 LMBDA = 0.0006
+THRESHOLD = 5.0
 OUT_PNG = ROOT / "figures" / "fig_trigger_map.png"
 OUT_PDF = ROOT / "figures" / "fig_trigger_map.pdf"
 # Image statistics are precomputed from the original files (Kodak, DIV2K and the web screenshots
@@ -119,7 +124,9 @@ def collect(stats):
             else:
                 dropped += 1
                 continue
-            agg[(round(mean, 2), round(std, 2), kind, name)].append(bool(r["collapsed"]))
+            margin = r["margin"] if "margin" in r \
+                else r["psnr"] - headline.flat_psnr(r["dataset"], r["image"])
+            agg[(round(mean, 2), round(std, 2), kind, name)].append(margin < THRESHOLD)
             kept += 1
     print(f"kept {kept} stock encodes at lambda={LMBDA}; dropped {dropped}")
     return agg
