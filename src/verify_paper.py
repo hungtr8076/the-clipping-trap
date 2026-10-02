@@ -487,6 +487,8 @@ def encoder_log() -> None:
     fact("first logged iteration", f"{min(i for _, _, i in rows)}")
     check("PSNR frozen at 20.281225 dB in every logged row", psnrs == {20.281225}, str(sorted(psnrs)))
     check("71 logged rows", len(rows) == 71, str(len(rows)))
+    check("the first seven rows are warm-up candidates (iterations 100-700, Figure 3b caption)",
+          [i for _, _, i in rows[:8]] == [100, 200, 300, 400, 500, 600, 700, 800])
     flat = [r["flat_psnr"] for r in jsonl("arena.jsonl") if r["image"] == "code01"][0]
     fact("code01 constant-image PSNR", f"{flat:.2f} dB", f"frozen PSNR is {flat - 20.281225:.2f} dB below it")
     check("frozen PSNR 0.36 dB below the 20.64 dB constant image", round(flat, 2) == 20.64 and round(flat - 20.281225, 2) == 0.36)
@@ -608,8 +610,8 @@ def second_review_facts(pool: list[dict]) -> None:
     got = [(b, c, g, m) for b, c, g, m in rows]
     want = [("0.97", "yes", "0.00e+00", "-1.12"), ("0.97", "no", "1.38e-01", "+22.57"),
             ("0.50", "yes", "5.99e-04", "+27.40"), ("0.50", "no", "9.15e-03", "+26.17")]
-    fact("Table 3 (left) from results/c3_gradient_trap.txt", str(got))
-    check("Table 3 (left) matches the recorded run", got == want)
+    fact("2x2 ablation (Mechanism) from results/c3_gradient_trap.txt", str(got))
+    check("2x2 ablation matches the recorded run", got == want)
 
 
 def main() -> None:
