@@ -1,0 +1,25 @@
+# python src/c3_gradient_trap.py, run 2026-10-02 on CPU (macOS arm64)
+# python 3.12, jax 0.4.30, jaxlib 0.4.30, dm-haiku 0.0.12, optax 0.2.3, numpy<2
+# Table 3 (left) in the paper is taken from this output.
+GRADIENT TRAP - on C3's synthesis structure (clip inside the optimization loop)
+  64x64 image, 400 steps, latents initialized biased upward (0.6)
+
+   brightness  clip?   loss 1st  loss last    drop  final |grad|    margin
+  ----------------------------------------------------------------------
+         0.97    yes    0.70257    0.09671   86.2%      0.00e+00     -1.12
+         0.97     no    0.72252    0.00032  100.0%      1.38e-01    +22.57
+         0.50    yes    0.16537    0.00006  100.0%      5.99e-04    +27.40
+         0.50     no    0.17569    0.00009   99.9%      9.15e-03    +26.17
+
+  HOW TO READ THIS - the criteria are GRADIENT and MARGIN, not the loss drop
+  (the loss can fall 86% and then die, so the drop is not a valid signal)
+    brightness=0.97  clip=yes   margin=  -1.12 dB  COLLAPSED  gradient DEAD
+    brightness=0.97  clip=no    margin= +22.57 dB  ok         
+    brightness=0.50  clip=yes   margin= +27.40 dB  ok         
+    brightness=0.50  clip=no    margin= +26.17 dB  ok         
+
+  -> MECHANISM CONFIRMED. Collapse needs BOTH conditions at once:
+      (a) content near the edge of the dynamic range, AND
+      (b) the clamp sitting inside the gradient path
+    Remove either condition and it learns normally.
+    The gradient in the collapsed cell is exactly 0.00e+00 - not small, ZERO.

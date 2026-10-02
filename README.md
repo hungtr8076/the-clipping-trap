@@ -48,7 +48,10 @@ Python 3.10 or later.
 pip install -r requirements.txt
 ```
 
-`c3_gradient_trap.py` also needs JAX, dm-haiku and optax. `make_screen_content.py` uses the
+`c3_gradient_trap.py` also needs JAX, dm-haiku and optax; Table 3 (left) is the output in
+`results/c3_gradient_trap.txt`, produced with jax 0.4.30, dm-haiku 0.0.12, optax 0.2.3 and
+numpy < 2 on CPU (other versions give the same collapse but slightly different margins for the
+other three arms). `make_screen_content.py` uses the
 macOS system fonts Arial, Times New Roman and Andale Mono; the 24 images it generates are
 already in `data/screen/`.
 

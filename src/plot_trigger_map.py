@@ -144,7 +144,7 @@ def main() -> None:
     bg = []
     for key, st in STATS.items():
         if key.split("/")[0] in ("kodak", "div2k_crops"):
-            bg.append((st["mean_L"], st["std_L"]))
+            bg.append((st["mean"], st["std"]))   # RGB, the same statistic as the markers
     bg = np.array(bg)
     ax.scatter(bg[:, 0], bg[:, 1], s=4, c="0.78", marker=".", linewidths=0, zorder=1,
                label=f"natural images, not encoded (n={len(bg)})")
@@ -196,8 +196,10 @@ def main() -> None:
 
     fig.tight_layout()
     OUT_PDF.parent.mkdir(exist_ok=True)
-    fig.savefig(OUT_PNG, dpi=200, bbox_inches="tight", pad_inches=0.02)
-    fig.savefig(OUT_PDF, bbox_inches="tight", pad_inches=0.02)
+    # bbox_extra_artists: the first legend is added with add_artist, so the tight bounding box
+    # would ignore it and clip its labels.
+    fig.savefig(OUT_PNG, dpi=200, bbox_inches="tight", pad_inches=0.02, bbox_extra_artists=[first, *ax.texts])
+    fig.savefig(OUT_PDF, bbox_inches="tight", pad_inches=0.02, bbox_extra_artists=[first, *ax.texts])
     print("wrote", OUT_PNG, "and", OUT_PDF)
 
 

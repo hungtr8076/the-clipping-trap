@@ -565,6 +565,53 @@ def init_ablation() -> None:
     check("both remaining collapses are real11", all(r["image"] == "real11" for r in rows if r["collapsed"]))
 
 
+def second_review_facts(pool: list[dict]) -> None:
+    """Numbers added after the second review (2026-10-02), each quoted in the paper."""
+    head("12. NUMBERS ADDED AFTER THE SECOND REVIEW")
+    by = defaultdict(lambda: {"c": [], "w": []})
+    for r in pool:
+        if "bpp" in r and r.get("image"):
+            by[r["image"]]["c" if r["_collapsed"] else "w"].append(r["bpp"])
+    fix = defaultdict(list)
+    for r in jsonl("metrics_coolchic.jsonl"):
+        if r["patched"]:
+            fix[r["image"]].append(r["bpp"])
+    for r in jsonl("arena.jsonl"):
+        if r.get("arm") == "st" and r.get("lmbda") == 0.0006:
+            fix[r["image"]].append(r["bpp"])
+    ratio = {im: min(d["w"] or fix[im]) / max(d["c"]) for im, d in by.items() if d["c"] and (d["w"] or fix[im])}
+    fact("rate ratio working / collapsed, same image", f"{min(ratio.values()):.1f} .. {max(ratio.values()):.1f}")
+    check("a collapsed encode has a rate at least three times lower", min(ratio.values()) >= 3.0)
+    stats = json.loads((RES / "image_stats.json").read_text(encoding="utf-8"))
+    means = []
+    for r in pool:
+        if r["_collapsed"]:
+            m = r.get("src_mean", r.get("mean"))
+            if m is None:
+                m = next(v["mean"] for k, v in stats.items() if k.endswith("/" + r["image"]))
+            means.append(m)
+    fact("lowest mean intensity of a collapsed encode", f"{min(means):.1f}")
+    check("every collapse occurs at a mean of 225 or above", min(means) >= 225.0)
+    ia = sorted(jsonl("init_ablation.jsonl"), key=lambda r: r["margin"])
+    low = [(r["image"], round(r["margin"], 2)) for r in ia[:3]]
+    fact("mean initialization, three lowest margins", str(low), f"next {ia[3]['margin']:+.2f} dB")
+    check("real11 reaches +1.75, +4.75, +7.29 dB; the other 17 exceed +12.4 dB",
+          low == [("real11", 1.75), ("real11", 4.75), ("real11", 7.29)] and ia[3]["margin"] > 12.4)
+    mc = jsonl("metrics_coolchic.jsonl")
+    pc = max(r["psnr"] for r in mc if r["margin"] < THRESHOLD)
+    pw = min(r["psnr"] for r in mc if r["margin"] >= THRESHOLD)
+    fact("18-encode batch PSNR", f"collapsed <= {pc:.2f} dB, working >= {pw:.2f} dB")
+    check("PSNR separates the batch at 31.30 / 34.04 dB", (round(pc, 2), round(pw, 2)) == (31.30, 34.04))
+    import re
+    rows = re.findall(r"^\s+(0\.\d\d)\s+(yes|no)\s+\S+\s+\S+\s+\S+%\s+(\S+)\s+([+-]\d+\.\d\d)$",
+                      (RES / "c3_gradient_trap.txt").read_text(encoding="utf-8"), re.M)
+    got = [(b, c, g, m) for b, c, g, m in rows]
+    want = [("0.97", "yes", "0.00e+00", "-1.12"), ("0.97", "no", "1.38e-01", "+22.57"),
+            ("0.50", "yes", "5.99e-04", "+27.40"), ("0.50", "no", "9.15e-03", "+26.17")]
+    fact("Table 3 (left) from results/c3_gradient_trap.txt", str(got))
+    check("Table 3 (left) matches the recorded run", got == want)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="exit 1 if any assertion fails")
@@ -587,6 +634,7 @@ def main() -> None:
     c3()
     trained()
     revision_facts(pool)
+    second_review_facts(pool)
     literature()
 
     head("SUMMARY")
