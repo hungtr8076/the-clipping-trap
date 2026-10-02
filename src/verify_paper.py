@@ -487,8 +487,17 @@ def encoder_log() -> None:
     fact("first logged iteration", f"{min(i for _, _, i in rows)}")
     check("PSNR frozen at 20.281225 dB in every logged row", psnrs == {20.281225}, str(sorted(psnrs)))
     check("71 logged rows", len(rows) == 71, str(len(rows)))
-    check("the first seven rows are warm-up candidates (iterations 100-700, Figure 3b caption)",
-          [i for _, _, i in rows[:8]] == [100, 200, 300, 400, 500, 600, 700, 800])
+    log = (ROOT / "logs" / "diag_code01.log").read_text(encoding="utf-8")
+    cands = len(re.findall(r"^Candidate n° \d+ , ID = (\d+)", log, re.M))
+    first_ids = re.findall(r"^Candidate n° \d+ , ID = (\d+)", log, re.M)[:5]
+    check("Figure 3b caption: warm-up of five candidates (IDs 0-4), the best two trained further",
+          first_ids == ["0", "1", "2", "3", "4"] and cands == 7, f"{cands} candidate rows, first IDs {first_ids}")
+    from PIL import Image
+    src = np.asarray(Image.open(ROOT / "data" / "screen" / "code01.png").convert("RGB"), np.float64)
+    white = 10 * np.log10(255.0 ** 2 / ((src - 255.0) ** 2).mean())
+    fact("PSNR of an all-white image against code01", f"{white:.6f} dB")
+    check("Mechanism: the frozen 20.281225 dB is the PSNR of an all-white output (quoted 20.28)",
+          abs(white - 20.281225) < 1e-5 and round(white, 2) == 20.28, f"{white:.6f}")
     flat = [r["flat_psnr"] for r in jsonl("arena.jsonl") if r["image"] == "code01"][0]
     fact("code01 constant-image PSNR", f"{flat:.2f} dB", f"frozen PSNR is {flat - 20.281225:.2f} dB below it")
     check("frozen PSNR 0.36 dB below the 20.64 dB constant image", round(flat, 2) == 20.64 and round(flat - 20.281225, 2) == 0.36)
@@ -522,8 +531,9 @@ def revision_facts(pool: list[dict]) -> None:
     coll = [r["bpp"] for r in pool if r["_collapsed"] and "bpp" in r]
     work = [r["bpp"] for r in pool if not r["_collapsed"] and "bpp" in r]
     fact("collapsed bpp max / working bpp min", f"{max(coll):.4f} / {min(work):.4f}")
-    check("a rate threshold also separates the groups (collapsed <= 0.045 bpp)",
-          round(max(coll), 3) == 0.045 and min(work) > max(coll))
+    check("Setup: rate separates the stock encodes (collapsed at most 0.045, working at least 0.076 bpp)",
+          round(max(coll), 3) == 0.045 and min(work) >= 0.076 and min(work) > max(coll),
+          f"{max(coll):.5f} / {min(work):.5f}")
     import headline                                   # noqa: E402
     m = np.array([r["psnr"] - headline.flat_psnr(r["dataset"], r["image"]) for r in headline.load()
                   if r["codec"] in ("bmshj2018-hp", "mbt2018-mean", "cheng2020")])

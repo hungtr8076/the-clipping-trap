@@ -100,7 +100,7 @@ python src/make_screen_content.py     # regenerates data/screen/ (macOS fonts)
 
 All numbers are recomputed from the measurements in `results/`. The encodes themselves were run
 with Cool-chic 5.0.1 (`mop` intra configuration, 2000 iterations unless stated otherwise) on
-NVIDIA RTX 3090 and RTX 2060 GPUs, and C3 on CPU.
+NVIDIA RTX 3090 and RTX 2060 GPUs and on an Apple-silicon CPU; C3 ran on CPU.
 
 Two parts of the verification depend on material that is not redistributed here:
 

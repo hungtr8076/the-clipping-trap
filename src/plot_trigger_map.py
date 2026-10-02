@@ -138,7 +138,7 @@ def main() -> None:
     stats = image_stats()
     agg = collect(stats)
 
-    fig, ax = plt.subplots(figsize=(5.0, 2.4))   # drawn at print size (5.0 in wide)
+    fig, ax = plt.subplots(figsize=(5.05, 2.24))  # drawn at print size (4.8 in wide after the tight bbox)
 
     # Background: the natural-image cloud, so the reader can see where photographs live.
     bg = []

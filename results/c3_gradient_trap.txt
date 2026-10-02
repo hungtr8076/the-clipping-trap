@@ -1,6 +1,6 @@
 # python src/c3_gradient_trap.py, run 2026-10-02 on CPU (macOS arm64)
 # python 3.12, jax 0.4.30, jaxlib 0.4.30, dm-haiku 0.0.12, optax 0.2.3, numpy<2
-# Table 3 (left) in the paper is taken from this output.
+# The 2x2 results quoted in the Mechanism section are taken from this output.
 GRADIENT TRAP - on C3's synthesis structure (clip inside the optimization loop)
   64x64 image, 400 steps, latents initialized biased upward (0.6)
 
