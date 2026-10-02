@@ -16,12 +16,12 @@ Cool-chic and C3 clamp the decoded image to [0, 1] inside the function that the 
 optimizer differentiates. The derivative of the clamp is zero outside the range, so on bright,
 low-contrast images the distortion gradient can become exactly zero during encoding. The
 optimizer then only reduces the rate, and the encoder returns a valid bitstream whose
-reconstruction is no better than a flat color field, without any error or warning. PSNR, SSIM,
+reconstruction is no better than a constant image, without any error or warning. PSNR, SSIM,
 MS-SSIM and LPIPS score such a reconstruction like the constant image, which on bright, flat
 content is already high, so the failure is not visible in the usual evaluation.
 
-A straight-through clamp removes the failure; initializing the output at the image mean, the usual remedy for collapse to a constant function, does not (2 of 20 encodes still collapse, `results/init_ablation.jsonl`). The straight-through clamp costs at most 0.1% BD-rate on Kodak (95%
-interval on the mean: [-1.18%, +0.10%]) and does not change the bitstream format.
+A straight-through clamp removes the failure; initializing the output at the image mean, the usual remedy for collapse to a constant function, does not (2 of 20 encodes still collapse, `results/init_ablation.jsonl`). On Kodak the straight-through clamp changes BD-rate by -0.54% on average (95%
+t-interval on the mean: [-1.22%, +0.14%]) and does not change the bitstream format.
 
 ## Repository layout
 

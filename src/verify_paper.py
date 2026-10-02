@@ -369,8 +369,12 @@ def bdrate() -> None:
     fact("images improved", f"{sum(1 for v in vals if v < 0)}/{len(vals)}")
     fact("range", f"{min(vals):+.2f}% .. {max(vals):+.2f}%")
     se = np.std(vals, ddof=1) / np.sqrt(len(vals))
-    lo, hi = np.mean(vals) - 1.96 * se, np.mean(vals) + 1.96 * se
-    fact("95% CI on the mean", f"[{lo:+.2f}%, {hi:+.2f}%]")
+    from scipy.stats import t as student_t          # n = 24 is too small for z = 1.96
+    q = student_t.ppf(0.975, len(vals) - 1)
+    lo, hi = np.mean(vals) - q * se, np.mean(vals) + q * se
+    fact("95% t-interval on the mean", f"[{lo:+.2f}%, {hi:+.2f}%]")
+    check("t-interval quoted as [-1.22%, +0.14%]", (round(lo, 2), round(hi, 2)) == (-1.22, 0.14),
+          f"[{lo:+.2f}%, {hi:+.2f}%]")
     try:
         from scipy.stats import wilcoxon
         fact("Wilcoxon signed-rank", f"p = {wilcoxon(vals).pvalue:.3f}",
@@ -498,11 +502,62 @@ def encoder_log() -> None:
           f"{max(lat)} {min(lat)}")
 
 
-def kodak_upper_bound() -> None:
-    head("2b. KODAK: 0 collapses in 27 stock encodes -> upper end of the exact 95% interval")
-    ub = 1 - 0.025 ** (1 / 27)
+def kodak_upper_bound(pool: list[dict]) -> None:
+    head("2b. KODAK: stock encodes at lambda = 0.0006 -> upper end of the exact 95% interval")
+    k = [r for r in pool if r.get("lmbda") == 0.0006 and str(r.get("image", "")).startswith("kodim")]
+    n, c = len(k), sum(r["_collapsed"] for r in k)
+    ub = 1 - 0.025 ** (1 / n)
+    fact("Kodak stock encodes", f"{c} collapsed of {n}")
     fact("Clopper-Pearson upper bound", f"{100 * ub:.1f}%")
-    check("bound quoted as 12.8%", round(100 * ub, 1) == 12.8, f"{100 * ub:.2f}")
+    check("Table 1: 0 of 29 Kodak encodes collapse", (c, n) == (0, 29), f"{c}/{n}")
+    check("bound quoted as 11.9%", round(100 * ub, 1) == 11.9, f"{100 * ub:.2f}")
+
+
+def revision_facts(pool: list[dict]) -> None:
+    """Numbers added in the 2026-10-02 revision, each quoted in the paper."""
+    head("11. NUMBERS ADDED IN THE REVISION")
+    from scipy.stats import beta
+    coll = [r["bpp"] for r in pool if r["_collapsed"] and "bpp" in r]
+    work = [r["bpp"] for r in pool if not r["_collapsed"] and "bpp" in r]
+    fact("collapsed bpp max / working bpp min", f"{max(coll):.4f} / {min(work):.4f}")
+    check("a rate threshold also separates the groups (collapsed <= 0.045 bpp)",
+          round(max(coll), 3) == 0.045 and min(work) > max(coll))
+    import headline                                   # noqa: E402
+    m = np.array([r["psnr"] - headline.flat_psnr(r["dataset"], r["image"]) for r in headline.load()
+                  if r["codec"] in ("bmshj2018-hp", "mbt2018-mean", "cheng2020")])
+    below = sorted(np.round(m[m < THRESHOLD], 2).tolist())
+    band = int(((m > 0.79) & (m < 10.82)).sum())
+    fact("trained codecs: margins below 5 dB", str(below), f"{band} encodes inside the 10 dB band")
+    check("trained codecs: +4.68 and +4.91 dB, 102 in the band, none below 1 dB",
+          below == [4.68, 4.91] and band == 102 and m.min() > 1.0)
+    g = defaultdict(dict)
+    for r in jsonl("arena.jsonl"):
+        if "_error" not in r and "seconds" in r:
+            g[(r["image"], r["lmbda"])][r["arm"]] = r["seconds"]
+    ratios = [d["st"] / d["base"] for d in g.values() if "st" in d and "base" in d]
+    fact("encoding time with the fix / stock", f"median {np.median(ratios):.3f} over {len(ratios)} pairs")
+    check("quoted as median 0.999 over 97 paired encodes",
+          round(float(np.median(ratios)), 3) == 0.999 and len(ratios) == 97)
+    def cp(x, n):
+        lo = beta.ppf(0.025, x, n - x + 1) if x > 0 else 0.0
+        hi = beta.ppf(0.975, x + 1, n - x) if x < n else 1.0
+        return round(100 * lo), round(100 * hi)
+    fact("Clopper-Pearson 5/8 and 16/50", f"{cp(5, 8)} {cp(16, 50)}")
+    check("intervals quoted as [24%, 91%] and [20%, 47%]", cp(5, 8) == (24, 91) and cp(16, 50) == (20, 47))
+    syn = sorted({r["image"] for r in pool if r.get("dataset") == "screen" and not r["_synthetic"]})
+    t01 = [r for r in pool if r.get("image") == "text01" and r.get("lmbda") == 0.0006]
+    fact("synthetic screens encoded with Cool-chic", ", ".join(syn))
+    check("six synthetic images; text01 collapses on 2 of 2", len(syn) == 6 and
+          (len(t01), sum(r["_collapsed"] for r in t01)) == (2, 2))
+    from PIL import Image
+    for rel in ("results/recon/text01_stock.png", "examples/text01_stock.png"):
+        if (ROOT / rel).exists():
+            a = np.asarray(Image.open(ROOT / rel).convert("RGB"))
+            fact("text01 stock reconstruction", f"min {a.min()} max {a.max()}")
+            check("text01 ends at 239 on all channels", a.min() == a.max() == 239)
+            break
+    else:
+        raise SystemExit("missing text01_stock.png")
 
 
 def init_ablation() -> None:
@@ -532,10 +587,11 @@ def main() -> None:
     the_fix()
     encoder_log()
     init_ablation()
-    kodak_upper_bound()
+    kodak_upper_bound(pool)
     bdrate()
     c3()
     trained()
+    revision_facts(pool)
     literature()
 
     head("SUMMARY")

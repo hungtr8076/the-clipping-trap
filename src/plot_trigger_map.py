@@ -37,6 +37,8 @@ from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams.update({"pdf.fonttype": 42, "font.size": 8, "axes.labelsize": 8.5,
+                            "xtick.labelsize": 7.5, "ytick.labelsize": 7.5})
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
@@ -136,7 +138,7 @@ def main() -> None:
     stats = image_stats()
     agg = collect(stats)
 
-    fig, ax = plt.subplots(figsize=(6.0, 4.4))
+    fig, ax = plt.subplots(figsize=(5.0, 2.4))   # drawn at print size (5.0 in wide)
 
     # Background: the natural-image cloud, so the reader can see where photographs live.
     bg = []
@@ -144,12 +146,14 @@ def main() -> None:
         if key.split("/")[0] in ("kodak", "div2k_crops"):
             bg.append((st["mean_L"], st["std_L"]))
     bg = np.array(bg)
-    ax.scatter(bg[:, 0], bg[:, 1], s=6, c="0.78", marker=".", linewidths=0, zorder=1,
+    ax.scatter(bg[:, 0], bg[:, 1], s=4, c="0.78", marker=".", linewidths=0, zorder=1,
                label=f"natural images, not encoded (n={len(bg)})")
     # Brightest FULL image of each benchmark. The DIV2K mark lands on full0138, which collapses.
-    for x, txt in ((170.5, "brightest of Kodak (24)"), (225.5, "brightest of DIV2K (800)")):
+    # Labels sit above the axes so that no marker can cover them.
+    for x, txt, ha in ((170.5, "Kodak max", "right"), (225.5, "DIV2K max", "left")):
         ax.axvline(x, color="0.35", linestyle=":", linewidth=1.1, zorder=2)
-        ax.text(x - 2, 88, txt, rotation=90, va="top", ha="right", fontsize=7, color="0.25")
+        ax.text(x, 1.01, txt, transform=ax.get_xaxis_transform(), va="bottom", ha=ha,
+                fontsize=7, color="0.25")
     seen_kinds = set()
     for (mean, std, kind, name), flags in sorted(agg.items()):
         n, k = len(flags), sum(flags)
@@ -157,17 +161,18 @@ def main() -> None:
         marker, _ = STYLE[kind]
         # fill encodes the collapse rate: open = never, gray = sometimes, black = always
         face = "white" if rate == 0 else ("black" if rate == 1 else "0.55")
-        ax.scatter(mean, std, marker=marker, s=34 + 9 * min(n, 12), facecolors=face,
-                   edgecolors="black", linewidths=0.9, zorder=3)
+        ax.scatter(mean, std, marker=marker, s=0.5 * (34 + 9 * min(n, 12)), facecolors=face,
+                   edgecolors="black", linewidths=0.7, zorder=3)
         seen_kinds.add(kind)
 
     # The two photographs that separate brightness from contrast.
-    for name, xy, ha in (("full0138", (-52, 14), "left"), ("full0502", (-64, -26), "left"),
-                         ("div127", (-70, -10), "left")):
+    for name, xy, ha in (("full0138", (-75, -12), "right"), ("full0502", (-14, 18), "right"),
+                         ("div127", (-12, -3), "right")):
         for (mean, std, kind, nm), flags in agg.items():
             if nm == name:
                 ax.annotate(f"{name}  {sum(flags)}/{len(flags)}", (mean, std),
-                            textcoords="offset points", xytext=xy, ha=ha, fontsize=8,
+                            textcoords="offset points", xytext=xy, ha=ha, fontsize=7.5,
+                            bbox=dict(boxstyle="square,pad=0.1", fc="white", ec="none"),
                             arrowprops=dict(arrowstyle="-", lw=0.7, color="0.3"))
     ax.set_xlabel("mean intensity of the source image (0-255)")
     ax.set_ylabel("standard deviation (contrast)")
@@ -175,23 +180,24 @@ def main() -> None:
     ax.set_axisbelow(True)
 
     shape_legend = [Line2D([], [], marker=STYLE[k][0], linestyle="none", markerfacecolor="white",
-                           markeredgecolor="black", markersize=7, label=STYLE[k][1])
+                           markeredgecolor="black", markersize=5, label=STYLE[k][1])
                     for k in ("natural", "screen", "screen_real", "derived") if k in seen_kinds]
     fill_legend = [Line2D([], [], marker="o", linestyle="none", markerfacecolor=f,
-                          markeredgecolor="black", markersize=7, label=l)
+                          markeredgecolor="black", markersize=5, label=l)
                    for f, l in (("white", "never collapsed"), ("0.55", "collapsed sometimes"),
                                 ("black", "collapsed every encode"))]
     ax.set_xlim(-8, 268); ax.set_ylim(-4, 92)
-    first = ax.legend(handles=shape_legend, loc="upper left", fontsize=7.2, frameon=True,
-                      borderpad=0.4, labelspacing=0.3)
+    # Both legends sit outside the axes, to the right, so that they cover no data.
+    first = ax.legend(handles=shape_legend, loc="upper left", bbox_to_anchor=(1.02, 1.0),
+                      fontsize=7, frameon=False, borderpad=0.2, labelspacing=0.4)
     ax.add_artist(first)
-    ax.legend(handles=fill_legend, loc="lower left", fontsize=7.2, frameon=True,
-              borderpad=0.4, labelspacing=0.3)
+    ax.legend(handles=fill_legend, loc="lower left", bbox_to_anchor=(1.02, 0.0), fontsize=7,
+              frameon=False, borderpad=0.2, labelspacing=0.4)
 
     fig.tight_layout()
     OUT_PDF.parent.mkdir(exist_ok=True)
-    fig.savefig(OUT_PNG, dpi=200)
-    fig.savefig(OUT_PDF)
+    fig.savefig(OUT_PNG, dpi=200, bbox_inches="tight", pad_inches=0.02)
+    fig.savefig(OUT_PDF, bbox_inches="tight", pad_inches=0.02)
     print("wrote", OUT_PNG, "and", OUT_PDF)
 
 
