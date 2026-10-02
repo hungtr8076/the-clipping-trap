@@ -138,7 +138,7 @@ def main() -> None:
     stats = image_stats()
     agg = collect(stats)
 
-    fig, ax = plt.subplots(figsize=(5.05, 2.24))  # drawn at print size (4.8 in wide after the tight bbox)
+    fig, ax = plt.subplots(figsize=(4.95, 2.25))  # drawn at print size (4.74 in wide after the tight bbox)
 
     # Background: the natural-image cloud, so the reader can see where photographs live.
     bg = []
@@ -151,9 +151,12 @@ def main() -> None:
     # Brightest FULL image of each benchmark. The DIV2K mark lands on full0138, which collapses.
     # Labels sit above the axes so that no marker can cover them.
     for x, txt, ha in ((170.5, "Kodak max", "right"), (225.5, "DIV2K max", "left")):
-        ax.axvline(x, color="0.35", linestyle=":", linewidth=1.1, zorder=2)
+        ax.axvline(x, ymin=(-4.5 + 17) / 124, ymax=(94.5 + 17) / 124, color="0.35", linestyle=":", linewidth=1.1, zorder=2)
         ax.text(x, 1.01, txt, transform=ax.get_xaxis_transform(), va="bottom", ha=ha,
                 fontsize=7, color="0.25")
+        # a short dotted tick above the frame ties the label to its line, which stops below the legend
+        ax.plot([x, x], [1.0, 1.012], transform=ax.get_xaxis_transform(), clip_on=False, ls=":",
+                lw=1.1, color="0.35")
     seen_kinds = set()
     for (mean, std, kind, name), flags in sorted(agg.items()):
         n, k = len(flags), sum(flags)
@@ -166,11 +169,12 @@ def main() -> None:
         seen_kinds.add(kind)
 
     # The two photographs that separate brightness from contrast.
-    for name, xy, ha in (("full0138", (-75, -12), "right"), ("full0502", (-14, 18), "right"),
-                         ("div127", (-12, -3), "right")):
+    for name, xy, ha in (("full0138", (-75, -12), "right"), ("full0502", (-12, 0), "right"),
+                         ("div127", (-15, -3), "right")):
         for (mean, std, kind, nm), flags in agg.items():
             if nm == name:
-                ax.annotate(f"{name}  {sum(flags)}/{len(flags)}", (mean, std),
+                sep = "\n" if name == "full0502" else "  "          # two lines keep full0502 off the Kodak line
+                ax.annotate(f"{name}{sep}{sum(flags)}/{len(flags)}", (mean, std),
                             textcoords="offset points", xytext=xy, ha=ha, fontsize=7.5,
                             bbox=dict(boxstyle="square,pad=0.1", fc="white", ec="none"),
                             arrowprops=dict(arrowstyle="-", lw=0.7, color="0.3"))
@@ -186,13 +190,23 @@ def main() -> None:
                           markeredgecolor="black", markersize=5, label=l)
                    for f, l in (("white", "never collapsed"), ("0.55", "collapsed sometimes"),
                                 ("black", "collapsed every encode"))]
-    ax.set_xlim(-8, 268); ax.set_ylim(-4, 92)
-    # Both legends sit outside the axes, to the right, so that they cover no data.
-    first = ax.legend(handles=shape_legend, loc="upper left", bbox_to_anchor=(1.02, 1.0),
-                      fontsize=7, frameon=False, borderpad=0.2, labelspacing=0.4)
+    # Legends sit in two strips that the axes reserve above and below the data (std 0..92), so
+    # that the plot keeps the full width and no legend covers a marker or a background dot.
+    ax.set_xlim(-8, 268); ax.set_ylim(-17, 107); ax.set_yticks([0, 20, 40, 60, 80])
+    for y in (-4.5, 94.5):
+        ax.axhline(y, color="0.85", linewidth=0.6, zorder=0)
+    short = {"natural photograph": "photograph", "screen content, synthetic": "synthetic screen",
+             "screen content, real screenshot": "real screenshot",
+             "brightness-shifted variant": "brightness-shifted"}
+    for h in shape_legend:
+        h.set_label(short.get(h.get_label(), h.get_label()))
+    for h, l in zip(fill_legend, ("never collapsed", "collapsed sometimes", "collapsed every encode")):
+        h.set_label(l)
+    first = ax.legend(handles=shape_legend, loc="upper center", ncol=4, fontsize=7, frameon=False,
+                      borderpad=0.15, handletextpad=0.2, columnspacing=1.0)
     ax.add_artist(first)
-    ax.legend(handles=fill_legend, loc="lower left", bbox_to_anchor=(1.02, 0.0), fontsize=7,
-              frameon=False, borderpad=0.2, labelspacing=0.4)
+    ax.legend(handles=fill_legend, loc="lower center", ncol=3, fontsize=7, frameon=False,
+              borderpad=0.15, handletextpad=0.2, columnspacing=1.0)
 
     fig.tight_layout()
     OUT_PDF.parent.mkdir(exist_ok=True)
