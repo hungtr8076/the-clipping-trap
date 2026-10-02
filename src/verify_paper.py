@@ -550,14 +550,9 @@ def revision_facts(pool: list[dict]) -> None:
     check("six synthetic images; text01 collapses on 2 of 2", len(syn) == 6 and
           (len(t01), sum(r["_collapsed"] for r in t01)) == (2, 2))
     from PIL import Image
-    for rel in ("results/recon/text01_stock.png", "examples/text01_stock.png"):
-        if (ROOT / rel).exists():
-            a = np.asarray(Image.open(ROOT / rel).convert("RGB"))
-            fact("text01 stock reconstruction", f"min {a.min()} max {a.max()}")
-            check("text01 ends at 239 on all channels", a.min() == a.max() == 239)
-            break
-    else:
-        raise SystemExit("missing text01_stock.png")
+    a = np.asarray(Image.open(ROOT / "examples" / "text01_stock.png").convert("RGB"))
+    fact("text01 stock reconstruction", f"min {a.min()} max {a.max()}")
+    check("text01 ends at 239 on all channels", a.min() == a.max() == 239)
 
 
 def init_ablation() -> None:
