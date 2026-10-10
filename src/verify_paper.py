@@ -446,31 +446,6 @@ def trained() -> None:
         print("  (scipy missing - skipping the Fisher test)")
 
 
-def literature() -> None:
-    head("10. THE LITERATURE SCAN QUOTED IN RELATED WORK")
-    lit = ROOT / "lit"
-    four = {"2605.02726": "Cool-chic 5.0", "2607.13723": "N-O Cool-chic",
-            "2509.18748": "HyperCool", "2605.20672": "LANCE"}
-    words, hits = 0, {k: 0 for k in ("clip", "clamp", "collapse", "failure", "screen content")}
-    missing = []
-    for aid, name in four.items():
-        f = lit / f"{aid}.txt"
-        if not f.exists():
-            missing.append(aid); continue
-        txt = f.read_text(encoding="utf-8", errors="ignore")
-        words += len(txt.split())
-        low = txt.lower()
-        for k in hits:
-            hits[k] += low.count(k)
-    if missing:
-        print(f"  (skipping - no full text for {', '.join(missing)})")
-        return
-    fact("full text of the four papers", f"{words} words", "quoted verbatim in Related Work")
-    fact("keyword hits", ", ".join(f"{k}={v}" for k, v in hits.items()))
-    check("none of the five strings occurs in any of the four papers",
-          all(v == 0 for v in hits.values()))
-
-
 def encoder_log() -> None:
     head("6b. STOCK ENCODER LOG DURING A COLLAPSE (logs/diag_code01.log, lambda=0.0002, 6000 itr, CPU)")
     import re
@@ -524,9 +499,9 @@ def kodak_upper_bound(pool: list[dict]) -> None:
     check("bound quoted as 11.9%", round(100 * ub, 1) == 11.9, f"{100 * ub:.2f}")
 
 
-def revision_facts(pool: list[dict]) -> None:
-    """Numbers added in the 2026-10-02 revision, each quoted in the paper."""
-    head("11. NUMBERS ADDED IN THE REVISION")
+def rate_gap_and_intervals(pool: list[dict]) -> None:
+    """Rate gap, trained codecs, encoding time and the exact intervals quoted in the paper."""
+    head("11. RATE GAP, TRAINED CODECS, ENCODING TIME, INTERVALS")
     from scipy.stats import beta
     coll = [r["bpp"] for r in pool if r["_collapsed"] and "bpp" in r]
     work = [r["bpp"] for r in pool if not r["_collapsed"] and "bpp" in r]
@@ -577,9 +552,9 @@ def init_ablation() -> None:
     check("both remaining collapses are real11", all(r["image"] == "real11" for r in rows if r["collapsed"]))
 
 
-def second_review_facts(pool: list[dict]) -> None:
-    """Numbers added after the second review (2026-10-02), each quoted in the paper."""
-    head("12. NUMBERS ADDED AFTER THE SECOND REVIEW")
+def mechanism_and_fix_facts(pool: list[dict]) -> None:
+    """Rate ratio, lowest collapsing mean, mean initialization and the 2x2 ablation."""
+    head("12. RATE RATIO, LOWEST COLLAPSING MEAN, MEAN INITIALIZATION, 2x2 ABLATION")
     by = defaultdict(lambda: {"c": [], "w": []})
     for r in pool:
         if "bpp" in r and r.get("image"):
@@ -624,6 +599,89 @@ def second_review_facts(pool: list[dict]) -> None:
     check("2x2 ablation matches the recorded run", got == want)
 
 
+def rates_and_brightened_photo(pool: list[dict]) -> None:
+    head("13. RATE OF A COLLAPSED ENCODE, BRIGHTENED PHOTOGRAPH, LOWEST TRAINED MARGIN")
+    coll = sorted(r["bpp"] for r in pool if r["_collapsed"])
+    fact("collapsed encodes under 0.01 bpp", f"{sum(b < 0.01 for b in coll)} of {len(coll)}",
+         f"median {coll[len(coll) // 2]:.4f} bpp")
+    check("Introduction: a collapsed encode usually spends a few thousandths of a bit per pixel",
+          sum(b < 0.01 for b in coll) > 0.8 * len(coll))
+    ramp = [r for r in pool if r.get("arm") == "C"]     # full0138 with its range compressed toward white
+    levels = sorted({r["image"] for r in ramp})
+    fact("full0138 compressed toward white",
+         f"{sum(r['_collapsed'] for r in ramp)}/{len(ramp)} collapsed over {len(levels)} levels",
+         f"means {min(r['src_mean'] for r in ramp):.1f}..{max(r['src_mean'] for r in ramp):.1f}, "
+         f"std {max(r['src_std'] for r in ramp):.1f}..{min(r['src_std'] for r in ramp):.1f}")
+    check("The Failure Mode: all 15 encodes collapse, three per level, means 229-250, std 19-4",
+          len(ramp) == 15 and all(r["_collapsed"] for r in ramp) and len(levels) == 5
+          and all(sum(r["image"] == lv for r in ramp) == 3 for lv in levels)
+          and round(min(r["src_mean"] for r in ramp)) == 229 and round(max(r["src_mean"] for r in ramp)) == 250
+          and round(max(r["src_std"] for r in ramp)) == 19 and round(min(r["src_std"] for r in ramp)) == 4)
+    import headline                                   # noqa: E402
+    tr = [r for r in headline.load() if r["codec"] in ("bmshj2018-hp", "mbt2018-mean", "cheng2020")]
+    lowest = min(r["psnr"] - headline.flat_psnr(r["dataset"], r["image"]) for r in tr)
+    n_img = len({(r["dataset"], r["image"]) for r in tr})
+    n_q = len({(r["codec"], r["q"]) for r in tr})     # 8 + 8 + 6 quality levels
+    fact("trained codecs: lowest margin", f"{lowest:+.2f} dB over {len(tr)} encodes",
+         f"{n_img} images x {n_q} model-quality settings")
+    check("Introduction: no trained margin below +4.68 dB in 1408 encodes (64 images, 22 settings)",
+          round(lowest, 2) == 4.68 and len(tr) == 1408 and n_img == 64 and n_q == 22)
+
+
+def bright_images_in_standard_sets() -> None:
+    head("14. HOW RARE IS A MEAN OF 225 OR MORE IN THE STANDARD SETS")
+    div = jsonl("prevalence_div2k.jsonl")
+    clic = jsonl("prevalence_clic2020.jsonl")
+    hi_div = [r["image"] for r in div if r["mean"] >= 225]
+    fact("DIV2K train: images with mean >= 225", f"{len(hi_div)} of {len(div)}", ", ".join(hi_div))
+    fact("CLIC2020 validation: brightest mean", f"{max(r['mean'] for r in clic):.1f} over {len(clic)} images")
+    check("Limitations: one of 800 DIV2K images (0138) and none of 41 CLIC2020 images reach a mean of 225",
+          len(div) == 800 and hi_div == ["0138.png"] and len(clic) == 41
+          and max(r["mean"] for r in clic) < 225 and round(max(r["mean"] for r in clic)) == 203)
+
+
+def schedule_yuv_remedies() -> None:
+    """Stock encodes at the default 10,000 iterations and on the YUV420 path, and two other
+    remedies (no clamp during the optimization, leaky clamp); one row per encode."""
+    head("15. DEFAULT SCHEDULE, YUV420 PATH, OTHER REMEDIES")
+    rows = jsonl("schedule_yuv_remedies.jsonl")
+
+    def grp(**kw):
+        return [r for r in rows if all(r[k] == v for k, v in kw.items())]
+
+    def rate(rs):
+        return f"{sum(r['margin'] < THRESHOLD for r in rs)}/{len(rs)}"
+
+    three = ("full0138", "div127", "code01")
+    long_run = {im: grp(arm="stock", input="rgb", n_itr=10000, image=im) for im in three}
+    for im, rs in long_run.items():
+        fact(f"10,000 iterations, {im}", rate(rs) + " collapsed",
+             "margins " + ", ".join(f"{r['margin']:+.2f}" for r in rs))
+    check("Limitations: at 10,000 iterations full0138, div127 and code01 collapse on 1 of 5, 3 of 3 and 3 of 3",
+          [rate(long_run[im]) for im in three] == ["1/5", "3/3", "3/3"])
+    yuv = {im: grp(arm="stock", input="yuv420", n_itr=2000, image=im) for im in three}
+    for im, rs in yuv.items():
+        fact(f"YUV420 path, {im}", rate(rs) + " collapsed",
+             "Y-plane margins " + ", ".join(f"{r['margin']:+.2f}" for r in rs))
+    yuv_all = [r for rs in yuv.values() for r in rs]
+    check("Limitations: YUV420 path, 1 of 9 encodes collapsed, the one on div127",
+          rate(yuv_all) == "1/9" and [r["image"] for r in yuv_all if r["margin"] < THRESHOLD] == ["div127"])
+    ste = {r["image"]: r["margin"] for r in jsonl("metrics_coolchic.jsonl") if r["patched"]}
+    f138 = [r["margin"] for r in jsonl("metrics_full0138.jsonl") if r["patched"]]
+    ste["full0138"] = sum(f138) / len(f138)
+    collapsing = ("div127", "real11", "text01", "code01", "full0138")
+    for arm, lo, hi in (("noclamp", 15.2, 28.0), ("leaky", 14.7, 30.5)):
+        rc = [r for r in grp(arm=arm, input="rgb", n_itr=2000) if r["image"] in collapsing]
+        dev = max(abs(r["margin"] - ste[r["image"]]) for r in rc)
+        fact(f"{arm}: margins on the five collapsing images",
+             f"{min(r['margin'] for r in rc):+.2f} .. {max(r['margin'] for r in rc):+.2f} dB",
+             f"at most {dev:.2f} dB from the straight-through encode of the same image")
+        check(f"Fix: {arm} recovers all five, margins {lo:+.1f} to {hi:+.1f} dB, within 1.9 dB of straight-through",
+              len(rc) == 5 and all(r["margin"] >= THRESHOLD for r in rc)
+              and round(min(r["margin"] for r in rc), 1) == lo and round(max(r["margin"] for r in rc), 1) == hi
+              and dev < 1.9)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="exit 1 if any assertion fails")
@@ -645,9 +703,11 @@ def main() -> None:
     bdrate()
     c3()
     trained()
-    revision_facts(pool)
-    second_review_facts(pool)
-    literature()
+    rate_gap_and_intervals(pool)
+    mechanism_and_fix_facts(pool)
+    rates_and_brightened_photo(pool)
+    bright_images_in_standard_sets()
+    schedule_yuv_remedies()
 
     head("SUMMARY")
     if FAILURES:

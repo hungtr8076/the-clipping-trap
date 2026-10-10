@@ -1,8 +1,8 @@
-# The Clipping Trap: A Silent Failure Mode in Overfitted Neural Image Codecs
+# The Clipping Trap: Output Clamping Collapses Overfitted Image Codecs on Bright Content
 
 Code and measurements for the paper
 
-> Hung Tran. *The Clipping Trap: A Silent Failure Mode in Overfitted Neural Image Codecs.*
+> Hung Tran. *The Clipping Trap: Output Clamping Collapses Overfitted Image Codecs on Bright Content.*
 > Preprint: [doi:10.5281/zenodo.22997667](https://doi.org/10.5281/zenodo.22997667)
 
 | source | stock Cool-chic 5.0.1 | with the fix |
@@ -18,15 +18,26 @@ low-contrast images the distortion gradient can become exactly zero during encod
 optimizer then only reduces the rate, and the encoder returns a valid bitstream whose
 reconstruction is no better than a constant image, without any error or warning. PSNR, SSIM,
 MS-SSIM and LPIPS score such a reconstruction like the constant image, which on bright, flat
-content is already high, so the failure is not visible in the usual evaluation.
+content is already high, so no fixed quality threshold reveals the failure.
 
-A straight-through clamp removes the failure; initializing the output at the image mean, the usual remedy for collapse to a constant function, does not (2 of 20 encodes still collapse, `results/init_ablation.jsonl`). On Kodak the straight-through clamp changes BD-rate by -0.54% on average (95%
-t-interval on the mean: [-1.22%, +0.14%]) and does not change the bitstream format.
+A straight-through clamp recovers every collapsed encode we re-ran; initializing the output at
+the image mean, the usual remedy for collapse to a constant function, does not (2 of 20 encodes
+still collapse, `results/init_ablation.jsonl`). Training without the clamp and a leaky clamp also
+recover the five collapsing images (`results/schedule_yuv_remedies.jsonl`). On Kodak, at 2000
+iterations, the straight-through clamp changes BD-rate by -0.54% on average (95% t-interval on
+the mean: [-1.22%, +0.14%]) and does not change the bitstream format.
+
+The failure survives the default 10,000 iterations (`full0138` 1 of 5, `div127` 3 of 3, `code01`
+3 of 3 encodes) and also occurs, less often, on the YUV420 input path (1 of 9 encodes). Images
+this bright are rare in the standard sets: one of the 800 DIV2K training photographs and none of
+the 41 CLIC2020 validation images reach a mean intensity of 225.
 
 ## Repository layout
 
 ```
 patch/coolchic_ste.patch     the fix, against Cool-chic v5.0.1 (commit a6fe38a)
+patch/coolchic_other_remedies.patch
+                             two other remedies compared in the Fix section (same commit)
 src/detect_collapse.py       check whether a reconstruction has collapsed (margin test)
 src/verify_paper.py          recomputes every number in the paper from results/
 src/analyze.py, headline.py  helpers used by verify_paper.py
@@ -83,6 +94,12 @@ clamp becomes a straight-through clamp (`y + (clamp(y, 0, 1) - y).detach()`); at
 clamp is unchanged. Files encoded with the patched encoder decode identically with the
 unmodified decoder.
 
+`patch/coolchic_other_remedies.patch` applies to the same commit instead of the fix and adds two
+remedies that the paper compares with it, switched on by environment variables:
+`CC_NO_CLAMP_TRAIN=1` removes the clamp during the per-image optimization (inference still
+clamps), and `CC_LEAKY_CLAMP=1` replaces it with a leaky clamp of slope `CC_LEAKY_SLOPE`
+(default 0.01) outside [0, 1].
+
 For [DeepMind's C3](https://github.com/google-deepmind/c3_neural_compression) (commit `e63e751`),
 the equivalent experiment in the paper changes no code: set `clip_range` in the configuration
 from `(0.0, 1.0)` to `(-10., 10.)`.
@@ -100,24 +117,28 @@ python src/make_screen_content.py     # regenerates data/screen/ (macOS fonts)
 
 All numbers are recomputed from the measurements in `results/`. The encodes themselves were run
 with Cool-chic 5.0.1 (`mop` intra configuration, 2000 iterations unless stated otherwise) on
-NVIDIA RTX 3090 and RTX 2060 GPUs and on an Apple-silicon CPU; C3 ran on CPU.
+NVIDIA RTX 3090, RTX 2060 and RTX A4500 GPUs and on an Apple-silicon CPU; C3 ran on CPU.
 
-Two parts of the verification depend on material that is not redistributed here:
+The images are not all redistributed here. Kodak, DIV2K, CLIC2020 and the 16 web-page
+screenshots are not included. Their per-image statistics (mean, standard deviation, PSNR of the
+constant image) are stored in `results/image_stats.json`, which is all the scripts need. Kodak is
+available at <http://r0k.us/graphics/kodak/> and DIV2K at
+<https://data.vision.ee.ethz.ch/cvl/DIV2K/>.
 
-- **Images.** Kodak, DIV2K and the 16 web-page screenshots are not included. Their per-image
-  statistics (mean, standard deviation, PSNR of the constant image) are stored in
-  `results/image_stats.json`, which is all the scripts need. Kodak is available at
-  <http://r0k.us/graphics/kodak/> and DIV2K at <https://data.vision.ee.ethz.ch/cvl/DIV2K/>.
-- **Literature scan.** The keyword count in the Related Work section was run on the full text of
-  four papers, which we cannot redistribute; `verify_paper.py` skips that check when the texts
-  are absent.
+`results/schedule_yuv_remedies.jsonl` holds one row per encode for three experiments at
+lambda = 0.0006: stock encodes at 10,000 iterations (`n_itr`), stock encodes of the same images
+as 8-bit YUV420 input (`input`), and the two remedies of `patch/coolchic_other_remedies.patch`
+(`arm`). The YUV420 files were made from the RGB images with the full-range BT.601 conversion of
+Pillow and 2x2 chroma averaging, and their margin is computed on the Y plane.
+`results/prevalence_div2k.jsonl` and `results/prevalence_clic2020.jsonl` give the RGB mean and
+standard deviation of the 800 DIV2K training photographs and the 41 CLIC2020 validation images.
 
 ## Citation
 
 ```bibtex
 @misc{tran2026clippingtrap,
   author    = {Tran, Hung},
-  title     = {The Clipping Trap: A Silent Failure Mode in Overfitted Neural Image Codecs},
+  title     = {The Clipping Trap: Output Clamping Collapses Overfitted Image Codecs on Bright Content},
   year      = {2026},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.22997667},

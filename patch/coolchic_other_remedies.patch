@@ -1,0 +1,31 @@
+--- a/coolchic/component/frame.py
++++ b/coolchic/component/frame.py
+@@ -9,6 +9,7 @@
+ 
+ """A frame encoder is composed of one or two CoolChicEncoder."""
+ 
++import os
+ from dataclasses import dataclass, field
+ from typing import Any, Dict, List, Optional, OrderedDict, Tuple, Union
+ import torch
+@@ -284,7 +285,19 @@
+         if self.frame_data_type == "yuv420":
+             decoded_image = yuv_dict_clamp(convert_444_to_420(decoded_image), 0.0, 1.0)
+         elif self.frame_data_type != "flow":
+-            decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
++            if self.training and os.environ.get("CC_NO_CLAMP_TRAIN") == "1":
++                # No clamp during the per-image optimization; inference still clamps.
++                pass
++            elif self.training and os.environ.get("CC_LEAKY_CLAMP") == "1":
++                # Leaky clamp: values outside [0, 1] keep a small slope instead of a zero one.
++                slope = float(os.environ.get("CC_LEAKY_SLOPE", "0.01"))
++                decoded_image = torch.where(
++                    decoded_image > 1.0,
++                    1.0 + slope * (decoded_image - 1.0),
++                    torch.where(decoded_image < 0.0, slope * decoded_image, decoded_image),
++                )
++            else:
++                decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
+ 
+         # Quantization
+         if not self.training:
