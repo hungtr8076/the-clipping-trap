@@ -381,6 +381,27 @@ def bdrate() -> None:
              "not an improvement at the 5% level")
     except ImportError:
         pass
+    # robustness to the interpolation: shape-preserving piecewise-cubic (PCHIP) instead of one cubic
+    from scipy.interpolate import PchipInterpolator
+    vp = []
+    for im in imgs:
+        b, s = g[(im, "base")], g[(im, "st")]
+        if len(b) < 4:
+            continue
+        areas = []
+        for d in (b, s):
+            ps = np.array([d[k]["psnr"] for k in sorted(d)])
+            lr = np.log10(np.array([d[k]["bpp"] for k in sorted(d)]))
+            o = np.argsort(ps)
+            areas.append((PchipInterpolator(ps[o], lr[o]), ps.min(), ps.max()))
+        lo_p, hi_p = max(a[1] for a in areas), min(a[2] for a in areas)
+        diff = (areas[1][0].integrate(lo_p, hi_p) - areas[0][0].integrate(lo_p, hi_p)) / (hi_p - lo_p)
+        vp.append((10 ** diff - 1) * 100)
+    se_p = np.std(vp, ddof=1) / np.sqrt(len(vp))
+    lo2, hi2 = np.mean(vp) - q * se_p, np.mean(vp) + q * se_p
+    fact("PCHIP interpolation: mean and 95% t-interval", f"{np.mean(vp):+.2f}%  [{lo2:+.2f}%, {hi2:+.2f}%]")
+    check("Fix: PCHIP gives the same mean (-0.54%) and the interval [-1.21%, +0.12%]",
+          round(float(np.mean(vp)), 2) == -0.54 and (round(lo2, 2), round(hi2, 2)) == (-1.21, 0.12))
     check("the whole Kodak set is covered", len(vals) == 24)
     # the claim the paper makes: whatever it costs, it is under a tenth of a percent
     check("the upper end of the interval is under +0.5%", hi < 0.5,
@@ -682,6 +703,46 @@ def schedule_yuv_remedies() -> None:
               and dev < 1.9)
 
 
+def c3_shipped_schedule() -> None:
+    """C3 at its shipped schedule (100,000 noise steps, up to 10,000 STE steps), 128x128 crops, RTX 4090."""
+    head("16. C3 AT ITS SHIPPED SCHEDULE - one config value changed, no code edited")
+    by = {(r["image"], r["arm"]): r for r in jsonl("c3_shipped_schedule.jsonl")}
+    for (im, arm), r in sorted(by.items()):
+        fact(f"{im} {arm}", f"margin {r['margin']:+.2f} dB",
+             f"recon std {r['recon_std']:.2f}, {r['steps']} + up to {r['ste_steps']} steps")
+    check("every run uses the shipped schedule on a 128x128 crop",
+          all(r["steps"] == 100000 and r["ste_steps"] == 10000 and r["crop"] == 128 for r in by.values()))
+    got = [round(by[k]["margin"], 2) for k in (("code01", "base"), ("text01", "base"),
+                                               ("code01", "clip_disabled"), ("text01", "clip_disabled"))]
+    check("Mechanism: the bright crops collapse at -0.29 and -0.73 dB and reach +31.05 and +26.49 dB with the widened range",
+          got == [-0.29, -0.73, 31.05, 26.49])
+
+
+def table2_constant_and_untested_range(pool: list[dict]) -> None:
+    head("17. 8-BIT CONSTANT IMAGE IN TABLE 2, AND THE RANGE OF MEANS WITH NO ENCODED IMAGE")
+    stats = json.loads((RES / "image_stats.json").read_text(encoding="utf-8"))
+    exact = {k.split("/")[1]: v["flat_psnr"] for k, v in stats.items()}
+    drop = {r["image"]: exact[r["image"]] - r["flat_psnr"] for r in jsonl("metrics_coolchic.jsonl")}
+    fact("PSNR lost by rounding the constant image to 8 bits", f"at most {max(drop.values()):.3f} dB",
+         max(drop, key=drop.get))
+    check("Table 2 caption: rounding lowers the constant-image PSNR by at most 0.04 dB",
+          0 <= min(drop.values()) and round(max(drop.values()), 2) == 0.04)
+    means = {}
+    for r in pool:
+        if r["_synthetic"] or not r.get("image"):
+            continue
+        m = r.get("src_mean", r.get("mean"))
+        if m is None:
+            m = next(v["mean"] for k, v in stats.items() if k.endswith("/" + r["image"]))
+        means[r["image"]] = m
+    inside = sorted(round(m, 1) for m in means.values() if 171 <= m <= 211)
+    below = max(m for m in means.values() if m < 171)
+    above = min(m for m in means.values() if m > 211)
+    fact("unmodified images encoded with stock Cool-chic", f"{len(means)}",
+         f"none with a mean between {below:.1f} and {above:.1f}")
+    check("Limitations: no unmodified image with a mean between 171 and 211 was encoded", not inside)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="exit 1 if any assertion fails")
@@ -708,6 +769,8 @@ def main() -> None:
     rates_and_brightened_photo(pool)
     bright_images_in_standard_sets()
     schedule_yuv_remedies()
+    c3_shipped_schedule()
+    table2_constant_and_untested_range(pool)
 
     head("SUMMARY")
     if FAILURES:

@@ -35,7 +35,7 @@ the 41 CLIC2020 validation images reach a mean intensity of 225.
 ## Repository layout
 
 ```
-patch/coolchic_ste.patch     the fix, against Cool-chic v5.0.1 (commit a6fe38a)
+patch/coolchic_ste.patch     the fix, against Cool-chic 5.0.1 (commit a6fe38a)
 patch/coolchic_other_remedies.patch
                              two other remedies compared in the Fix section (same commit)
 src/detect_collapse.py       check whether a reconstruction has collapsed (margin test)
@@ -85,7 +85,7 @@ and working ones between +10.82 and +35.52 dB, so the exact threshold does not m
 ```
 git clone https://github.com/Orange-OpenSource/Cool-Chic.git
 cd Cool-Chic
-git checkout a6fe38a            # v5.0.1
+git checkout a6fe38a            # version 5.0.1, two commits after the v5.0.1 tag
 git apply /path/to/patch/coolchic_ste.patch
 ```
 
@@ -97,12 +97,15 @@ unmodified decoder.
 `patch/coolchic_other_remedies.patch` applies to the same commit instead of the fix and adds two
 remedies that the paper compares with it, switched on by environment variables:
 `CC_NO_CLAMP_TRAIN=1` removes the clamp during the per-image optimization (inference still
-clamps), and `CC_LEAKY_CLAMP=1` replaces it with a leaky clamp of slope `CC_LEAKY_SLOPE`
-(default 0.01) outside [0, 1].
+clamps), and `CC_LEAKY_CLAMP=1` replaces it with a leaky clamp that is linear with slope
+`CC_LEAKY_SLOPE` (default 0.01) outside [0, 1].
 
 For [DeepMind's C3](https://github.com/google-deepmind/c3_neural_compression) (commit `e63e751`),
 the equivalent experiment in the paper changes no code: set `clip_range` in the configuration
-from `(0.0, 1.0)` to `(-10., 10.)`.
+from `(0.0, 1.0)` to `(-10., 10.)`. `results/c3_real.jsonl` holds the runs on a shortened schedule
+(3000 + 300 steps) and `results/c3_shipped_schedule.jsonl` those at the shipped schedule (100,000
+steps with quantization noise and up to 10,000 with straight-through quantization), all on
+128x128 crops.
 
 ## Reproduce the numbers in the paper
 
@@ -117,7 +120,8 @@ python src/make_screen_content.py     # regenerates data/screen/ (macOS fonts)
 
 All numbers are recomputed from the measurements in `results/`. The encodes themselves were run
 with Cool-chic 5.0.1 (`mop` intra configuration, 2000 iterations unless stated otherwise) on
-NVIDIA RTX 3090, RTX 2060 and RTX A4500 GPUs and on an Apple-silicon CPU; C3 ran on CPU.
+NVIDIA RTX 3090, RTX 2060 and RTX A4500 GPUs and on an Apple-silicon CPU; C3 ran on CPU and, at
+its shipped schedule, on an RTX 4090 GPU.
 
 The images are not all redistributed here. Kodak, DIV2K, CLIC2020 and the 16 web-page
 screenshots are not included. Their per-image statistics (mean, standard deviation, PSNR of the
