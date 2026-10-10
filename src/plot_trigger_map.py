@@ -158,7 +158,14 @@ def main() -> None:
         ax.plot([x, x], [1.0, 1.012], transform=ax.get_xaxis_transform(), clip_on=False, ls=":",
                 lw=1.1, color="0.35")
     seen_kinds = set()
-    for (mean, std, kind, name), flags in sorted(agg.items()):
+    # Draw order: images that never collapsed first, then those that collapse, and within each
+    # group the larger markers first, so that a collapsing image is never hidden under another.
+    def draw_key(item):
+        (_, _, _, _), fl = item
+        r = sum(fl) / len(fl)
+        return (0 if r == 0 else (1 if r < 1 else 2), -min(len(fl), 12))
+
+    for (mean, std, kind, name), flags in sorted(agg.items(), key=draw_key):
         n, k = len(flags), sum(flags)
         rate = k / n
         marker, _ = STYLE[kind]
