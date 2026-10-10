@@ -30,7 +30,9 @@ the mean: [-1.22%, +0.14%]) and does not change the bitstream format.
 The failure survives the default 10,000 iterations (`full0138` 1 of 5, `div127` 3 of 3, `code01`
 3 of 3 encodes) and also occurs, less often, on the YUV420 input path (1 of 9 encodes). Images
 this bright are rare in the standard sets: one of the 800 DIV2K training photographs and none of
-the 41 CLIC2020 validation images reach a mean intensity of 225.
+the 41 CLIC2020 validation images reach a mean intensity of 225. Bright regions are more common but
+seldom collapse: 28 of the 800 photographs contain a Kodak-sized window with a mean of 225 or more,
+and of 12 such windows sampled at random, one collapsed (on two of three encodes) and 11 never did.
 
 ## Repository layout
 
@@ -105,7 +107,9 @@ the equivalent experiment in the paper changes no code: set `clip_range` in the 
 from `(0.0, 1.0)` to `(-10., 10.)`. `results/c3_real.jsonl` holds the runs on a shortened schedule
 (3000 + 300 steps) and `results/c3_shipped_schedule.jsonl` those at the shipped schedule (100,000
 steps with quantization noise and up to 10,000 with straight-through quantization), all on
-128x128 crops.
+128x128 center crops. `results/c3_shipped_schedule_seeds.jsonl` repeats the shipped schedule with
+two more seeds on the same two crops and adds the four screenshots whose center crop is brightest
+among those that are not constant.
 
 ## Reproduce the numbers in the paper
 
@@ -121,7 +125,7 @@ python src/make_screen_content.py     # regenerates data/screen/ (macOS fonts)
 All numbers are recomputed from the measurements in `results/`. The encodes themselves were run
 with Cool-chic 5.0.1 (`mop` intra configuration, 2000 iterations unless stated otherwise) on
 NVIDIA RTX 3090, RTX 2060 and RTX A4500 GPUs and on an Apple-silicon CPU; C3 ran on CPU and, at
-its shipped schedule, on an RTX 4090 GPU.
+its shipped schedule, on RTX 4090 and RTX A4500 GPUs.
 
 The images are not all redistributed here. Kodak, DIV2K, CLIC2020 and the 16 web-page
 screenshots are not included. Their per-image statistics (mean, standard deviation, PSNR of the
@@ -136,6 +140,10 @@ as 8-bit YUV420 input (`input`), and the two remedies of `patch/coolchic_other_r
 Pillow and 2x2 chroma averaging, and their margin is computed on the Y plane.
 `results/prevalence_div2k.jsonl` and `results/prevalence_clic2020.jsonl` give the RGB mean and
 standard deviation of the 800 DIV2K training photographs and the 41 CLIC2020 validation images.
+`results/prevalence_div2k_regions.jsonl` gives, for each DIV2K photograph, the brightest
+Kodak-sized window (768x512, or 512x768 for portrait photographs; stride 32), and
+`results/div2k_bright_regions.jsonl` the three stock encodes of each of 12 windows sampled at
+random (`random.Random(0)`, over the sorted file names) among the 28 with a mean of 225 or more.
 
 ## Citation
 

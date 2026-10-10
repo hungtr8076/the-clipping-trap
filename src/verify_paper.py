@@ -740,7 +740,45 @@ def table2_constant_and_untested_range(pool: list[dict]) -> None:
     above = min(m for m in means.values() if m > 211)
     fact("unmodified images encoded with stock Cool-chic", f"{len(means)}",
          f"none with a mean between {below:.1f} and {above:.1f}")
-    check("Limitations: no unmodified image with a mean between 171 and 211 was encoded", not inside)
+    check("no unmodified image with a mean between 171 and 211 was encoded (a gap in coverage, not quoted)", not inside)
+
+
+def bright_regions_and_c3_seeds(pool: list[dict]) -> None:
+    head("18. BRIGHT REGIONS OF DIV2K PHOTOGRAPHS, AND C3 WITH MORE SEEDS AND CROPS")
+    win = jsonl("prevalence_div2k_regions.jsonl")
+    n_bright = sum(r["mean"] >= 225 for r in win)
+    fact("photographs whose brightest Kodak-sized window has a mean >= 225", f"{n_bright} of {len(win)}")
+    reg = jsonl("div2k_bright_regions.jsonl")
+    by = defaultdict(list)
+    for r in reg:
+        by[r["image"]].append(r["margin"])
+    coll = {k: sum(m < THRESHOLD for m in v) for k, v in by.items()}
+    fact("regions encoded", f"{len(by)} x {len(reg) // len(by)} stock encodes",
+         "collapsed encodes per region: " + ", ".join(f"{k}={v}" for k, v in sorted(coll.items()) if v))
+    check("The Failure Mode: 28 of 800 photographs; of 12 windows, one collapses on two of three encodes, 11 never",
+          len(win) == 800 and n_bright == 28 and len(by) == 12 and all(len(v) == 3 for v in by.values())
+          and sorted(coll.values()) == [0] * 11 + [2])
+    every = [r["margin"] for r in pool] + [r["margin"] for r in reg] \
+        + [r["margin"] for r in jsonl("schedule_yuv_remedies.jsonl") if r["arm"] == "stock"]
+    lo = max(r["margin"] for r in pool if r["_collapsed"])      # +0.79 dB, the edges of the empty band
+    hi = min(r["margin"] for r in pool if not r["_collapsed"])  # +10.82 dB
+    inside = [round(m, 2) for m in every if lo < m < hi]
+    fact("stock margins inside the +0.79 .. +10.82 dB band, all stock encodes", str(inside), f"{len(every)} encodes")
+    check("Setup: no stock margin falls between +0.79 and +10.82 dB, the later encodes included", not inside)
+    c3 = jsonl("c3_shipped_schedule_seeds.jsonl")
+    seeds = [r for r in c3 if r["image"] in ("code01", "text01")]
+    fact("C3 shipped schedule, seeds 1 and 2", ", ".join(f"{r['image']}/{r['seed']} {r['margin']:+.2f}" for r in seeds))
+    check("Mechanism: code01 and text01 collapse to -0.29 and -0.73 dB with seeds 1 and 2 as with seed 0",
+          len(seeds) == 4 and all(r["arm"] == "base" and r["steps"] == 100000 for r in seeds)
+          and all(round(r["margin"], 2) == (-0.29 if r["image"] == "code01" else -0.73) for r in seeds))
+    more = [r for r in c3 if r["image"].startswith("real")]
+    base = sorted(round(r["margin"], 2) for r in more if r["arm"] == "base")
+    wide = sorted(round(r["margin"], 2) for r in more if r["arm"] == "clip_disabled")
+    fact("four further screenshot crops", f"shipped clip range {base}, widened {wide}",
+         "crop means " + ", ".join(f"{r['mean']:.1f}" for r in more if r["arm"] == "base"))
+    check("Mechanism: four further crops collapse (-0.51 to -0.12 dB) and reach +27.16 to +33.12 dB when widened",
+          len(base) == 4 and len(wide) == 4 and (base[0], base[-1]) == (-0.51, -0.12)
+          and (wide[0], wide[-1]) == (27.16, 33.12) and all(r["steps"] == 100000 and r["crop"] == 128 for r in more))
 
 
 def main() -> None:
@@ -771,6 +809,7 @@ def main() -> None:
     schedule_yuv_remedies()
     c3_shipped_schedule()
     table2_constant_and_untested_range(pool)
+    bright_regions_and_c3_seeds(pool)
 
     head("SUMMARY")
     if FAILURES:
