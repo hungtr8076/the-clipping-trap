@@ -1,0 +1,30 @@
+\begin{table}[t]
+\centering
+\caption{\label{tab:rates}%
+Collapse rate of stock Cool-chic 5.0.1 per encode at $\lambda = 0.0006$ and 2000 iterations,
+for bright images and for the same images inverted ($255 - x$). Within a row the encodes of
+one file use the same settings; their outcomes differ because the optimization is not
+seeded. Mean and std are RGB statistics of the source; brackets give the 95\%
+Clopper--Pearson interval (\%). Eight of the ten \texttt{native0138} encodes ran in an
+earlier batch whose GPU was not recorded; the Kodak row has two encodes per image.}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrr@{\hspace{10pt}}rrr}
+\toprule
+ & \multicolumn{4}{c}{bright source} & \multicolumn{3}{c}{inverted} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-8}
+image & mean & std & collapsed & 95\% CI & mean & collapsed & 95\% CI \\
+\midrule
+\texttt{native0138} & 225.5 & 23.1 & 7/10 & [35, 93] &  & --- & --- \\
+\texttt{full0138} & 225.5 & 22.6 & 4/10 & [12, 74] & 29.5 & 0/10 & [0, 31] \\
+\texttt{full0502} & 223.7 & 55.3 & 0/10 & [0, 31] & 31.3 & 0/10 & [0, 31] \\
+\texttt{div127} & 249.3 & 4.0 & 10/10 & [69, 100] & 5.7 & 0/10 & [0, 31] \\
+\texttt{code01} & 248.1 & 23.7 & 10/10 & [69, 100] & 6.9 & 0/10 & [0, 31] \\
+\texttt{text01} & 237.8 & 51.0 & 4/10 & [12, 74] & 17.2 & 0/10 & [0, 31] \\
+\texttt{text04} & 238.0 & 52.9 & 3/10 & [7, 65] & 17.0 & 0/10 & [0, 31] \\
+\texttt{real09} & 243.2 & 35.5 & 4/10 & [12, 74] & 11.8 & 0/10 & [0, 31] \\
+\texttt{real11} & 254.7 & 7.5 & 10/10 & [69, 100] & 0.3 & 0/10 & [0, 31] \\
+\midrule
+24 Kodak images & \multicolumn{2}{c}{\V{kodakMinMean}--\V{kodakMaxMean}} & 0/48 & [0, 7] & & & \\
+\bottomrule
+\end{tabular}
+\end{table}

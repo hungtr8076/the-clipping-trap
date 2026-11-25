@@ -1,0 +1,27 @@
+\begin{table}[t]
+\centering
+\caption{\label{tab:remedies}%
+Output mappings of Section~\ref{sec:mappings} in Cool-chic 5.0.1, 2000 iterations. Left:
+encodes that did not collapse out of 30 (six collapsing images, five encodes each,
+$\lambda = 0.0006$) and their median margin (dB). Right: BD-rate (\%) against the shipped
+clamp on eight Kodak images (\texttt{kodim02}, \texttt{kodim05}, \ldots, \texttt{kodim23})
+at four rates, mean over images and 95\% $t$-interval; the second encode of the shipped clamp
+gives the run-to-run variation. The mean initialization changes only the start of the
+optimization and was not run on Kodak.}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{six collapsing images} & \multicolumn{2}{c}{eight Kodak images} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+mapping & not collapsed & median margin & BD-rate & 95\% CI \\
+\midrule
+Clamp (shipped) & 9/30 & $0.0$ & 0 (anchor) &  \\
+Clamp, second encode & --- &  & $-0.14$ & $[-1.31, +1.04]$ \\
+Straight-through clamp & 30/30 & $+24.3$ & $-0.53$ & $[-1.80, +0.74]$ \\
+No clamp & 30/30 & $+24.4$ & $+1.56$ & $[-0.24, +3.36]$ \\
+Leaky clamp & 30/30 & $+24.6$ & $+0.04$ & $[-1.31, +1.39]$ \\
+Sigmoid & 18/30 & $+11.2$ & $+128.73$ & $[+48.40, +209.05]$ \\
+Clamp, mean initialization & 29/30 & $+21.8$ & --- &  \\
+\bottomrule
+\end{tabular}
+\end{table}

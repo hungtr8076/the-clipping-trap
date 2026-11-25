@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\caption{\label{tab:metrics}%
+The four collapsed stock encodes of the 18-encode batch and the constant image $\bar x$ of
+the same source, rounded to 8 bits as a decoded image is and scored by the same code.
+\textit{std} is the spatial standard deviation of the reconstruction; the sources have
+\V{stdDiv}, \V{stdRealEleven}, \V{stdTextOne} and \V{stdCodeOne}.}
+\small
+\begin{tabular}{llrrrrr}
+\toprule
+image & reconstruction & PSNR (dB) & SSIM & MS-SSIM & LPIPS & std \\
+\midrule
+\texttt{div127} & collapsed & 31.30 & 0.9896 & 0.9903 & 0.0388 & 0.00 \\
+ & $\bar x$ & 36.35 & 0.9898 & 0.9904 & 0.0336 & 0.00 \\
+\midrule
+\texttt{real11} & collapsed & 30.68 & 0.9940 & 0.9949 & 0.0221 & 0.00 \\
+ & $\bar x$ & 30.68 & 0.9940 & 0.9949 & 0.0221 & 0.00 \\
+\midrule
+\texttt{text01} & collapsed & 13.98 & 0.4824 & 0.2418 & 0.8821 & 0.00 \\
+ & $\bar x$ & 13.98 & 0.4821 & 0.2418 & 0.8823 & 0.00 \\
+\midrule
+\texttt{code01} & collapsed & 20.60 & 0.8367 & 0.7087 & 0.4727 & 2.05 \\
+ & $\bar x$ & 20.64 & 0.8367 & 0.7088 & 0.4714 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}

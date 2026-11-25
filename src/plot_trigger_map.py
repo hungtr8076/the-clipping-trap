@@ -1,27 +1,18 @@
-"""Figure 2: the trigger region, in mean-brightness x contrast space.
+"""Figure 3: collapse by mean intensity and contrast of the source.
 
-The figure shows two things:
-
-  * the failure needs BOTH high mean intensity AND low contrast - full0138 and full0502 are
-    two DIV2K photographs whose mean differs by 1.8 levels but whose standard deviation
-    differs by a factor of 2.4, and only the low-contrast one collapses;
-  * the standard benchmarks do NOT clear the region. The vertical marks are the
-    brightest full image of each benchmark: 170.5 over Kodak's 24, and 225.5 over DIV2K's
-    800. That DIV2K image is full0138, and it collapses - 11 of 40 encodes at Kodak
-    resolution, 5 of 8 at its native 2040x1356. The brightest member of a standard benchmark
-    is inside the failure region, not outside it.
-    Nothing is claimed about Kodak: at mean 170.5 no encode has been run, so its status is
-    untested rather than safe.
+Each marker is one source image at lambda = 0.0006; its fill gives whether its stock encodes
+never, sometimes or always collapsed, and its label gives collapsed/encodes over every stock
+encode of that image in results/. Gray dots are the Kodak images and 240 DIV2K crops for
+reference; the dotted lines mark the brightest full image of Kodak and of DIV2K.
 
 Selection rules:
-  * STOCK encodes only. Every patched arm (straight-through, mean/meanstd init, clip
-    disabled) is excluded - a patched run that does not collapse says nothing about the
-    trigger.
+  * STOCK encodes only. Every other output mapping and initialization is excluded: an encode
+    that does not collapse with a modified codec says nothing about the trigger.
   * Cool-chic only. The C3 runs use a different codec, crop size and iteration budget.
-  * One rate point only, lambda = 0.0006. Collapse probability depends on lambda, so
-    pooling rates would put a second variable on a two-variable plot.
-  * Collapse uses the same rule as verify_paper.py, margin < 5 dB, recomputed for every row
-    rather than read from the stored `collapsed` flag (one probe_ramp row has a stale flag).
+  * One rate point only, lambda = 0.0006.
+  * Collapse uses the same rule as journal_numbers.py, margin < 5 dB, recomputed for every row.
+  * Inverted images have no entry in results/image_stats.json and are not drawn; Table 1 of the
+    paper reports them.
 
 Nothing is encoded by color, so the figure survives black-and-white printing: the marker
 SHAPE gives the content type and the marker FILL gives the measured collapse rate.
@@ -64,10 +55,16 @@ SOURCES = {
     "expand_real.jsonl":       lambda r: r.get("codec", "coolchic") == "coolchic",
     "repeatability.jsonl":     lambda r: True,
     "validate_predictor.jsonl": lambda r: True,
-    "probe_brightness.jsonl":  lambda r: True,
     "probe_ramp.jsonl":        lambda r: True,
+    "schedule_yuv_remedies.jsonl": lambda r: r.get("arm") == "stock" and r.get("input") == "rgb",
+    "screenshots_rd.jsonl":    lambda r: r.get("arm") == "stock",
+    "kodak_10k_rd.jsonl":      lambda r: r.get("arm") == "stock",
+    "collapse_rates.jsonl":    lambda r: True,
+    "output_mappings_kodak_rd.jsonl": lambda r: r.get("arm") == "stock",
+    "screenshots_rd_second_stock.jsonl": lambda r: True,
 }
-# excluded on purpose: c3_real.jsonl (different codec), verify_fix.jsonl (patched only)
+# excluded on purpose: c3_real.jsonl (different codec), verify_fix.jsonl (patched only),
+# probe_brightness.jsonl (inverted probes, reported with the inverted images in Table 1)
 
 STAT_GROUPS = ("kodak", "screen", "screen_real", "natural_bright")   # key prefixes in image_stats.json
 

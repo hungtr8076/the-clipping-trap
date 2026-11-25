@@ -5,10 +5,10 @@
 
 margin = PSNR(x, x_hat) - PSNR(x, x_bar), where x_bar is the constant image whose per-channel
 value is the mean of the source. A reconstruction whose margin is below the threshold (5 dB by
-default) is no better than a flat color field. In the paper, collapsed and working encodes are
-separated by an empty band from +0.79 dB to +10.82 dB, so any threshold in that band gives the
-same labels. An absolute PSNR/SSIM threshold cannot do this: on bright, flat content the
-constant image already scores high.
+default) is counted as collapsed. Over the 717 stock Cool-chic 5.0.1 encodes of the paper,
+collapsed and working encodes are separated by an empty band from +2.65 dB to +10.71 dB, so any
+threshold in that band gives the same labels. An absolute PSNR or SSIM threshold does not do
+this: on bright, flat content the constant image already scores high.
 
 Exit status: 0 = working encode, 1 = collapsed, 2 = bad input.
 """

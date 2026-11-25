@@ -685,6 +685,7 @@ def schedule_yuv_remedies() -> None:
         fact(f"YUV420 path, {im}", rate(rs) + " collapsed",
              "Y-plane margins " + ", ".join(f"{r['margin']:+.2f}" for r in rs))
     yuv_all = [r for rs in yuv.values() for r in rs]
+    fact("YUV420 path, all", rate(yuv_all) + " collapsed")
     check("Limitations: YUV420 path, 1 of 9 encodes collapsed, the one on div127",
           rate(yuv_all) == "1/9" and [r["image"] for r in yuv_all if r["margin"] < THRESHOLD] == ["div127"])
     ste = {r["image"]: r["margin"] for r in jsonl("metrics_coolchic.jsonl") if r["patched"]}

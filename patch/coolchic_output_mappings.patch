@@ -1,0 +1,126 @@
+diff -ru a/coolchic/bitstream/decode.py b/coolchic/bitstream/decode.py
+--- a/coolchic/bitstream/decode.py
++++ b/coolchic/bitstream/decode.py
+@@ -7,6 +7,7 @@
+ # Authors: Theo Ladune <theo.ladune@orange.com>
+ #          Pierrick Philippe <pierrick.philippe@orange.com>
+ 
++import os
+ import time
+ from typing import Dict, List, Optional, Tuple
+ 
+@@ -187,6 +188,11 @@
+ 
+         masked_pred = alpha * pred
+         decoded_image = masked_pred + residue
++
++    # The sigmoid output mapping of component/frame.py is part of the decoder, so the
++    # bitstream decoder applies it too, under the same environment variable.
++    if os.environ.get("CC_SIGMOID_OUT") == "1" and frame_data_type not in ("yuv420", "flow"):
++        decoded_image = torch.sigmoid(4.0 * (decoded_image - 0.5))
+ 
+     decoded_image = torch.round((2**bitdepth - 1) * decoded_image) / (2**bitdepth - 1)
+ 
+diff -ru a/coolchic/component/core/synthesis.py b/coolchic/component/core/synthesis.py
+--- a/coolchic/component/core/synthesis.py
++++ b/coolchic/component/core/synthesis.py
+@@ -350,12 +350,21 @@
+                 layer.initialize_parameters()
+ 
+     @torch.no_grad()
+-    def init_output_transform(self, img_min_max: Optional[Tensor] = None) -> None:
++    def init_output_transform(
++        self, img_min_max: Optional[Tensor] = None, img_mean: Optional[Tensor] = None
++    ) -> None:
++        """img_mean (per-channel mean of the image, set by CC_OUT_INIT=mean on the RGB path):
++        identity weight and a bias at the image mean, so that the output starts at the
++        constant image instead of black. Otherwise the upstream initialization."""
+ 
+         weight_shape = (self.output_ft, self.output_ft, 1, 1)
+         bias_shape = self.output_ft
+ 
+-        if img_min_max is None:
++        if img_mean is not None:
++            weight = torch.eye(self.output_ft).view(weight_shape)
++            bias = img_mean
++
++        elif img_min_max is None:
+             weight = torch.eye(self.output_ft).view(weight_shape)
+             bias = torch.zeros(bias_shape)
+ 
+diff -ru a/coolchic/component/frame.py b/coolchic/component/frame.py
+--- a/coolchic/component/frame.py
++++ b/coolchic/component/frame.py
+@@ -1,3 +1,4 @@
++import os
+ # Software Name: Cool-Chic
+ # SPDX-FileCopyrightText: Copyright (c) 2023-2025 Orange
+ # SPDX-License-Identifier: BSD 3-Clause "New"
+@@ -284,7 +285,30 @@
+         if self.frame_data_type == "yuv420":
+             decoded_image = yuv_dict_clamp(convert_444_to_420(decoded_image), 0.0, 1.0)
+         elif self.frame_data_type != "flow":
+-            decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
++            # Output mapping g used in the loss (The Clipping Trap). The derivative of
++            # torch.clamp is zero outside [0, 1], and this clamp lies inside the function
++            # that the per-image optimization differentiates. With no variable set, the
++            # shipped clamp is used.
++            if os.environ.get("CC_STRAIGHT_THROUGH_CLAMP") == "1" and self.training:
++                # Forward value of the clamp, gradient of the identity.
++                clamped = torch.clamp(decoded_image, 0.0, 1.0)
++                decoded_image = decoded_image + (clamped - decoded_image).detach()
++            elif os.environ.get("CC_NO_CLAMP_TRAIN") == "1" and self.training:
++                # No clamp during the optimization; the clamp is still applied at
++                # inference (self.training is False there).
++                pass
++            elif os.environ.get("CC_LEAKY_CLAMP") == "1" and self.training:
++                # Identity inside [0, 1], slope a outside.
++                a = float(os.environ.get("CC_LEAKY_SLOPE", "0.01"))
++                decoded_image = torch.where(
++                    decoded_image > 1.0, 1.0 + a * (decoded_image - 1.0),
++                    torch.where(decoded_image < 0.0, a * decoded_image, decoded_image))
++            elif os.environ.get("CC_SIGMOID_OUT") == "1":
++                # sigmoid(4 (y - 0.5)), slope 1 at y = 0.5, applied at training and at
++                # inference; bitstream/decode.py applies it under the same variable.
++                decoded_image = torch.sigmoid(4.0 * (decoded_image - 0.5))
++            else:
++                decoded_image = torch.clamp(decoded_image, 0.0, 1.0)
+ 
+         # Quantization
+         if not self.training:
+diff -ru a/coolchic/component/video.py b/coolchic/component/video.py
+--- a/coolchic/component/video.py
++++ b/coolchic/component/video.py
+@@ -81,6 +81,7 @@
+         coolchic_enc_param[cc_enc_name].encoder_gain = 16
+ 
+         img_min_max = None
++        img_mean = None
+         if frame.frame_type != "I":
+             continue
+ 
+@@ -100,6 +101,15 @@
+             img_max = frame.data.data.amax(dim=(-1, -2), keepdim=True).view(-1, 1)
+             img_min_max = torch.cat((img_min, img_max), dim=1)
+ 
++        # CC_OUT_INIT=mean (RGB path only): start the output at the per-channel image mean.
++        out_init = os.environ.get("CC_OUT_INIT", "")
++        if out_init == "mean":
++            if frame.data.frame_data_type != "rgb":
++                raise ValueError("CC_OUT_INIT=mean is implemented for RGB input only")
++            img_mean = frame.data.data.mean(dim=(-1, -2)).view(-1)
++        elif out_init:
++            raise ValueError(f"unknown CC_OUT_INIT value: {out_init}")
++
+     # Determine the number of output features for all cc_enc
+     n_ft_out_cc_enc = {}
+     match frame.frame_type:
+@@ -190,7 +200,7 @@
+             frame_display_index=frame.display_order,
+         )
+ 
+-        cur_frame_encoder.coolchic_enc["residue"].synthesis.init_output_transform(img_min_max)
++        cur_frame_encoder.coolchic_enc["residue"].synthesis.init_output_transform(img_min_max, img_mean)
+ 
+         # Plug inside the pretrained motion cool-chic encoder
+         if frame.frame_type != "I":
